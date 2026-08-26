@@ -1241,6 +1241,42 @@ export const COLDMAIL_TEMPLATES = [
     }),
   },
   {
+    match: /^rothea-.*-private/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử — Performance Marketer — Amazon US E-commerce tại Rothea',
+      ko: '[FYI] 추천 후보 명단에 선정되셨습니다 — Rothea Performance Marketer (Amazon US)',
+      en: "[FYI] You've been nominated — Performance Marketer (Amazon US E-commerce) at Rothea",
+    },
+    desc: '로테아 추천 (8/26): 비공개 프레임 — 북미 아마존/월마트/틱톡샵 운영, CV 원본 스캔 A(아마존 US 접점)+B(글로벌 마켓플레이스 2y+) 30명.',
+    source: 'scripts/outreach/rothea-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '<b>Rothea</b> — thương hiệu skincare Hàn Quốc (Resilience Cream) đang vận hành kênh e-commerce Bắc Mỹ (Amazon US/Canada, Walmart, TikTok Shop US) — đang tuyển qua FYI. Làm việc bằng tiếng Anh. Đội ngũ FYI đã xem xét toàn bộ hồ sơ và <b>chọn bạn vào danh sách đề cử</b>.',
+        ko: '북미 아마존·월마트·틱톡샵 채널을 운영하는 K뷰티 스킨케어 브랜드 <b>로테아</b>가 FYI를 통해 채용 중입니다. 업무 언어는 영어입니다. FYI 팀이 이력서 전체를 검토해 회원님을 <b>추천 명단에 선정</b>했습니다.',
+        en: '<b>Rothea</b> — a Korean skincare brand (Resilience Cream) running North American e-commerce channels (Amazon US/Canada, Walmart, TikTok Shop US) — is hiring via FYI. The FYI team reviewed all profiles and <b>nominated you</b>.',
+      },
+      initial: 'R', company: 'Rothea', title: 'Performance Marketer', meta: '32–35 triệu ₫/tháng · HCM, ĐN, HN', tail: BENEFIT_PRIVATE,
+    }),
+  },
+  {
+    match: /^rothea-/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử gửi Rothea — Performance Marketer — Amazon US E-commerce',
+      ko: '[FYI] Rothea 추천 명단에 선정되셨습니다 — Performance Marketer (Amazon US)',
+      en: "[FYI] You've been nominated to Rothea — Performance Marketer (Amazon US E-commerce)",
+    },
+    desc: '로테아 추천 (8/26): 공개 프레임 — FYI 검토 선정·명단에 프로필 동봉·지원 시 우선 검토.',
+    source: 'scripts/outreach/rothea-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '<b>Rothea</b> — thương hiệu skincare Hàn Quốc (Resilience Cream) đang vận hành kênh e-commerce Bắc Mỹ (Amazon US/Canada, Walmart, TikTok Shop US) — đang tuyển qua FYI. Làm việc bằng tiếng Anh. Đội ngũ FYI đã xem xét toàn bộ hồ sơ và <b>chọn bạn vào danh sách đề cử</b> — hồ sơ công khai của bạn sẽ được gửi kèm danh sách cho nhà tuyển dụng trong tuần này.',
+        ko: '북미 아마존·월마트·틱톡샵 채널을 운영하는 K뷰티 스킨케어 브랜드 <b>로테아</b>가 FYI를 통해 채용 중입니다. FYI 팀이 이력서 전체를 검토해 회원님을 <b>추천 명단에 선정</b>했으며, 공개 프로필은 이번 주 명단과 함께 담당자에게 전달됩니다.',
+        en: '<b>Rothea</b> — a Korean skincare brand (Resilience Cream) running North American e-commerce channels (Amazon US/Canada, Walmart, TikTok Shop US) — is hiring via FYI. The FYI team reviewed all profiles and <b>nominated you</b>; your public profile goes to the recruiter with this week\'s list.',
+      },
+      initial: 'R', company: 'Rothea', title: 'Performance Marketer', meta: '32–35 triệu ₫/tháng · HCM, ĐN, HN', tail: BENEFIT_PUBLIC,
+    }),
+  },
+  {
     match: /^bada-.*-private/,
     subject: {
       vi: '[FYI] Bạn được chọn vào danh sách đề cử — {{포지션}} tại Bada Fintech',
