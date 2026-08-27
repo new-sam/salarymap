@@ -12,7 +12,11 @@ const supabase = createClient(
 )
 
 const EVENTS = ['cv_view', 'cv_form_view', 'cv_open_picker', 'cv_attach_file',
-                'cv_register_success', 'sign_up']
+                'cv_register_success', 'sign_up',
+                /* 히어로 공고 카드 클릭. meta.to 로 두 갈래다 — 등록 전이면 폼으로
+                   내려보내고(form), 등록을 마쳤으면 공고 상세로 보낸다(detail).
+                   카드가 등록을 돕는지 공고 구경으로 새게 하는지가 여기서 갈린다. */
+                'cv_hero_job_click']
 const PAGE = 1000
 const MAX_ROWS = 120000
 const vnToday = () => new Date(Date.now() + 7 * 3600000).toISOString().slice(0, 10)
@@ -35,7 +39,7 @@ export default async function handler(req, res) {
     let truncated = false
     for (let off = 0; off < MAX_ROWS; off += PAGE) {
       const { data, error } = await supabase
-        .from('events').select('event, client_id, created_at')
+        .from('events').select('event, client_id, created_at, meta')
         .in('event', EVENTS)
         .gte('created_at', startISO).lt('created_at', endISO)
         .order('created_at', { ascending: true })
@@ -58,8 +62,17 @@ export default async function handler(req, res) {
         : null
       const key = part ? `${d}#${part}` : d
       let g = per.get(key)
-      if (!g) { g = { day: d, part }; for (const e of EVENTS) g[e] = new Set(); per.set(key, g) }
+      if (!g) {
+        g = { day: d, part }
+        for (const e of EVENTS) g[e] = new Set()
+        g.hero_to_form = new Set(); g.hero_to_detail = new Set()
+        per.set(key, g)
+      }
       g[r.event]?.add(r.client_id)
+      if (r.event === 'cv_hero_job_click') {
+        const to = r.meta?.to === 'detail' ? 'hero_to_detail' : 'hero_to_form'
+        g[to].add(r.client_id)
+      }
     }
     /* 가입은 전역 이벤트라 /cv 밖 유입도 섞인다 — 그날 /cv 를 본 사람과 교집합만 센다. */
     const order = (r) => `${r.day}${r.part === 'before' ? '0' : '1'}`
@@ -68,6 +81,8 @@ export default async function handler(req, res) {
         const view = g.cv_view
         const o = { day: g.day, part: g.part, cv_view: view.size }
         for (const e of EVENTS) if (e !== 'cv_view' && e !== 'sign_up') o[e] = g[e].size
+        o.hero_to_form = g.hero_to_form.size
+        o.hero_to_detail = g.hero_to_detail.size
         o.signup = [...g.sign_up].filter(k => view.has(k)).length
         return o
       })

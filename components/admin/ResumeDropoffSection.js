@@ -192,7 +192,7 @@ function DailyFunnelTable({ res, L, dateRange }) {
           overflowY: data.days.length > 10 ? 'auto' : 'visible',
           maxHeight: data.days.length > 10 ? 420 : undefined,
         }}>
-          <table style={{ borderCollapse: 'collapse', width: '100%', minWidth: 560 }}>
+          <table style={{ borderCollapse: 'collapse', width: '100%', minWidth: 680 }}>
             <thead style={{ position: 'sticky', top: 0, background: '#fff', zIndex: 1 }}>
               <tr style={{ borderBottom: '1px solid #e5e7eb' }}>
                 <th style={{ ...th, textAlign: 'left' }}>{L('날짜', 'Date', 'Ngày')}</th>
