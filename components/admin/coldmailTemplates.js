@@ -1241,6 +1241,42 @@ export const COLDMAIL_TEMPLATES = [
     }),
   },
   {
+    match: /^atop-.*-private/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử — Thực tập sinh tiếng Hàn – Dịch thuật & Hành chính văn phòng tại Atop Study Cafe',
+      ko: '[FYI] 추천 후보 명단에 선정되셨습니다 — Atop Study Cafe 한국어 통번역·사무 인턴',
+      en: "[FYI] You've been nominated — Korean Translation & Office Admin Intern at Atop Study Cafe",
+    },
+    desc: '아톱 스터디카페 추천 (8/27): 비공개 프레임 — HCMC 7군 통번역·사무 인턴, TOPIK4+×주니어(0-2y)×HCMC권 13명(A10/B3).',
+    source: 'scripts/outreach/atop-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '<b>Atop Study Cafe</b> — study cafe phong cách Hàn Quốc tại Quận 7, TP.HCM — đang tuyển thực tập sinh tiếng Hàn (dịch thuật Hàn–Việt &amp; hành chính văn phòng) qua FYI. Không yêu cầu kinh nghiệm, được đào tạo trong công việc. Đội ngũ FYI đã xem xét toàn bộ hồ sơ và <b>chọn bạn vào danh sách đề cử</b>.',
+        ko: '호치민 7군의 한국식 스터디카페 <b>Atop Study Cafe</b>가 FYI를 통해 한국어 통번역·사무 인턴을 채용 중입니다. 경력 무관·실무 교육 제공. FYI 팀이 이력서 전체를 검토해 회원님을 <b>추천 명단에 선정</b>했습니다.',
+        en: '<b>Atop Study Cafe</b> — a Korean-style study cafe in District 7, HCMC — is hiring a Korean translation & office admin intern via FYI. No experience required. The FYI team reviewed all profiles and <b>nominated you</b>.',
+      },
+      initial: 'A', company: 'Atop Study Cafe', title: 'Thực tập sinh tiếng Hàn – Dịch thuật & HC văn phòng', meta: 'Thực tập · Quận 7, TP.HCM · Onsite', tail: BENEFIT_PRIVATE,
+    }),
+  },
+  {
+    match: /^atop-/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử gửi Atop Study Cafe — Thực tập sinh tiếng Hàn – Dịch thuật & Hành chính văn phòng',
+      ko: '[FYI] Atop Study Cafe 추천 명단에 선정되셨습니다 — 한국어 통번역·사무 인턴',
+      en: "[FYI] You've been nominated to Atop Study Cafe — Korean Translation & Office Admin Intern",
+    },
+    desc: '아톱 스터디카페 추천 (8/27): 공개 프레임 — FYI 검토 선정·명단에 프로필 동봉·지원 시 우선 검토.',
+    source: 'scripts/outreach/atop-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '<b>Atop Study Cafe</b> — study cafe phong cách Hàn Quốc tại Quận 7, TP.HCM — đang tuyển thực tập sinh tiếng Hàn (dịch thuật Hàn–Việt &amp; hành chính văn phòng) qua FYI. Không yêu cầu kinh nghiệm, được đào tạo trong công việc. Đội ngũ FYI đã xem xét toàn bộ hồ sơ và <b>chọn bạn vào danh sách đề cử</b> — hồ sơ công khai của bạn sẽ được gửi kèm danh sách cho nhà tuyển dụng trong tuần này.',
+        ko: '호치민 7군의 한국식 스터디카페 <b>Atop Study Cafe</b>가 FYI를 통해 한국어 통번역·사무 인턴을 채용 중입니다. FYI 팀이 이력서 전체를 검토해 회원님을 <b>추천 명단에 선정</b>했으며, 공개 프로필은 이번 주 명단과 함께 담당자에게 전달됩니다.',
+        en: "<b>Atop Study Cafe</b> — a Korean-style study cafe in District 7, HCMC — is hiring a Korean translation & office admin intern via FYI. The FYI team reviewed all profiles and <b>nominated you</b>; your public profile goes to the recruiter with this week's list.",
+      },
+      initial: 'A', company: 'Atop Study Cafe', title: 'Thực tập sinh tiếng Hàn – Dịch thuật & HC văn phòng', meta: 'Thực tập · Quận 7, TP.HCM · Onsite', tail: BENEFIT_PUBLIC,
+    }),
+  },
+  {
     match: /^gasdna-.*-private/,
     subject: {
       vi: '[FYI] Bạn được chọn vào danh sách đề cử — Kỹ sư Firmware & Thiết kế Mạch điện tử (làm việc tại Hàn Quốc) tại GasDNA',
