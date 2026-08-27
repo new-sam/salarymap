@@ -151,141 +151,143 @@ function FunnelCard({ f, res, L }) {
   )
 }
 
-/* 배포 전후를 같은 길이의 창으로 나란히 놓는다. 날짜 피커를 안 쓰는 이유는
-   API 쪽 주석에 적었다 — 이 표는 배포 시점에 고정돼야 뜻이 있다. */
-/* 진입 → 폼 도달 → 등록 완료가 주 3단이고 나머지는 그 사이를 설명하는 보조 지표다.
-   한 표에 두되 주 3단만 굵게 둔다. */
-const CMP_ROWS = [
-  { key: 'cv_view', ko: '진입', en: 'Views', vi: 'Lượt xem', base: true, strong: true },
-  { key: 'cv_form_view', ko: '폼 도달', en: 'Form reached', vi: 'Tới form', strong: true },
-  { key: 'cv_open_picker', ko: '피커 열기', en: 'Picker opened', vi: 'Mở chọn file' },
-  { key: 'cv_attach_file', ko: '첨부', en: 'Attached', vi: 'Đính kèm' },
-  { key: 'cv_register_success', ko: '등록 완료', en: 'Registered', vi: 'Hoàn tất', strong: true },
-  { key: 'cv_click_hero_cta', ko: '히어로 CTA 클릭', en: 'Hero CTA click', vi: 'Bấm CTA đầu' },
-  { key: 'cv_scrolldown_click', ko: '하단 CTA 바 클릭', en: 'Bottom CTA click', vi: 'Bấm CTA dưới' },
+/* 날짜 × 단계 표. 배포 전후 창 두 개를 나란히 두던 방식은 "어느 날이 좋았나"를
+   못 보여줬다 — 날짜를 세로로 깔면 배포일 전후가 그대로 보이고, 일간 변동폭이
+   얼마나 큰지도 같이 드러난다(하루 100명 표본이라 이게 중요하다).
+   상단 날짜 피커를 그대로 따른다. */
+const DEPLOY_DAY = '2026-08-25'  // /cv 개선 배포일 — 표에서 그 줄만 표시한다
+
+const DAILY_COLS = [
+  { key: 'cv_view', ko: '진입', en: 'Views', vi: 'Lượt xem', base: true },
+  { key: 'cv_form_view', ko: '폼 도달', en: 'Form', vi: 'Form', rate: true },
+  { key: 'cv_open_picker', ko: '피커 열기', en: 'Picker', vi: 'Chọn file', rate: true },
+  { key: 'cv_attach_file', ko: '첨부', en: 'Attach', vi: 'Đính kèm', rate: true },
+  { key: 'cv_register_success', ko: '등록 완료', en: 'Registered', vi: 'Hoàn tất', rate: true, strong: true },
+  { key: 'signup', ko: '가입', en: 'Signup', vi: 'Đăng ký', rate: true, strong: true },
 ]
 
-function DeployCompareCard({ res, L }) {
+function DailyFunnelTable({ res, L, dateRange }) {
   const { data, error, isLoading } = res
-  /* 하루가 안 찼으면 원값 그대로 — 22시간치를 24시간으로 부풀리면 안 본 2시간을
-     예측으로 채우는 셈이다. 하루를 넘긴 뒤에는 완료된 날수로만 나눈다. */
-  const days = data?.days || 0
-  const asAvg = days >= 1
-  const show = (v) => (asAvg ? (v / days).toFixed(1) : fmt(v))
-  const cell = (side, r) => {
-    const v = data?.[side]?.[r.key] ?? 0
-    const base = data?.[side]?.cv_view ?? 0
-    return { v, rate: r.base || base === 0 ? null : (v / base) * 100 }
-  }
-  const th = { padding: '8px 10px', fontSize: 11, fontWeight: 700, color: '#8B95A1', textAlign: 'right', whiteSpace: 'nowrap' }
-  const td = { padding: '8px 10px', fontSize: 12.5, color: '#191F28', textAlign: 'right', whiteSpace: 'nowrap' }
+  const th = { padding: '8px 9px', fontSize: 11, fontWeight: 700, color: '#8B95A1', textAlign: 'right', whiteSpace: 'nowrap' }
+  const td = { padding: '7px 9px', fontSize: 12.5, color: '#191F28', textAlign: 'right', whiteSpace: 'nowrap' }
   return (
     <div style={{ ...sectionStyle, marginBottom: 12 }}>
       <div style={{ fontSize: 13.5, fontWeight: 700, color: '#333', marginBottom: 2 }}>
-        {L('2026-08-25 배포 전후 비교', 'Before vs after the 2026-08-25 deploy', 'So sánh trước/sau triển khai 2026-08-25')}
+        {L('/cv 등록 퍼널 · 일별', '/cv registration funnel · daily', 'Phễu đăng ký /cv · theo ngày')}
       </div>
       <div style={{ fontSize: 11.5, color: '#8B95A1', marginBottom: 12, lineHeight: 1.7 }}>
-        {L('배포 시각을 기준으로 같은 길이의 창을 나란히 둔다 — 위 날짜 피커와 무관하다. "전" 창은 계측이 바뀐 8/18 을 넘지 않게 최대 7일로 막아둔다(넘으면 배포 효과가 아니라 계측 차이를 보게 된다).',
-           'Two equal windows anchored on the deploy time — independent of the date picker above. The "before" window is capped at 7 days so it never crosses the 8/18 instrumentation change.',
-           'Hai cửa sổ bằng nhau quanh thời điểm triển khai — không phụ thuộc bộ chọn ngày ở trên.')}
+        {dateRange.from} ~ {dateRange.to}{' · '}
+        {L('사람(client_id) 단위 · 괄호는 진입 대비 · VN(UTC+7) 날짜. 하루 진입이 100 안팎이라 일간 변동이 크다 — 한 줄이 아니라 흐름으로 볼 것.',
+           'Per client_id · share of views in parentheses · VN dates. Daily samples are ~100, so read the trend, not a single row.',
+           'Theo client_id · trong ngoặc là tỷ lệ so với lượt xem · ngày VN.')}
       </div>
       {error ? <div style={{ color: '#c00', fontSize: 12.5 }}>{error.message}</div>
         : isLoading && !data ? <div style={{ color: '#999', fontSize: 12.5 }}>{L('불러오는 중…', 'Loading…', 'Đang tải…')}</div>
+        : !data.days?.length ? <div style={{ color: '#999', fontSize: 12.5 }}>{L('해당 기간에 데이터가 없습니다.', 'No data in range.', 'Không có dữ liệu.')}</div>
         : (
-        <>
-          <div style={{ fontSize: 11.5, color: '#8B95A1', marginBottom: 8 }}>
-            {L('배포', 'Deployed', 'Triển khai')}{' '}
-            <b style={{ color: '#191F28' }}>
-              {new Date(data.deployAt).toLocaleString('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' }).slice(0, 16)} VN
-            </b>
-            {' · '}
-            {asAvg
-              ? <>
-                  <b style={{ color: '#191F28' }}>{L('일 평균', 'Per day', 'Mỗi ngày')}</b>
-                  <span style={{ color: '#8B95A1' }}>
-                    {' '}({L(`완료된 ${days}일치를 나눈 값`, `averaged over ${days} whole day${days > 1 ? 's' : ''}`, `chia cho ${days} ngày trọn`)})
-                  </span>
-                </>
-              : <><b style={{ color: '#191F28' }}>{data.hours}h</b>
-                <span style={{ color: TONE.warn }}>
-                  {' '}({L(`아직 24시간이 안 지나 ${data.hours}h 기준입니다`,
-                          `less than 24h since deploy — ${data.hours}h window`,
-                          `chưa đủ 24h — cửa sổ ${data.hours}h`)})
-                </span></>}
-            {data.capped && <span style={{ color: TONE.warn }}>{' '}({L('7일 상한 도달 — 더 늘지 않음', 'capped at 7 days', 'giới hạn 7 ngày')})</span>}
-          </div>
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ borderCollapse: 'collapse', width: '100%', minWidth: 470 }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid #e5e7eb' }}>
-                  <th style={{ ...th, textAlign: 'left' }} />
-                  <th style={th}>{asAvg
-                    ? L(`배포 전 (일 평균)`, `Before (per day)`, `Trước (mỗi ngày)`)
-                    : L(`배포 전 ${data.hours}h`, `Before ${data.hours}h`, `Trước ${data.hours}h`)}</th>
-                  <th style={th}>{asAvg
-                    ? L(`배포 후 (일 평균)`, `After (per day)`, `Sau (mỗi ngày)`)
-                    : L(`배포 후 ${data.hours}h`, `After ${data.hours}h`, `Sau ${data.hours}h`)}</th>
-                  <th style={th}>{L('변화', 'Change', 'Thay đổi')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {CMP_ROWS.map(r => {
-                  const b = cell('before', r), a = cell('after', r)
-                  const dp = b.rate !== null && a.rate !== null ? a.rate - b.rate : null
-                  // 진입(분모)은 비율이 없으니 물량 증감률로 본다.
-                  const dv = b.v > 0 ? ((a.v - b.v) / b.v) * 100 : null
-                  const good = dp !== null ? dp > 0 : dv !== null && dv > 0
-                  const bad = dp !== null ? dp < 0 : dv !== null && dv < 0
-                  return (
-                    <tr key={r.key} style={{ borderBottom: '1px solid #f4f5f6', background: r.strong ? '#FAFBFC' : undefined }}>
-                      <td style={{ ...td, textAlign: 'left', fontWeight: r.strong ? 700 : 500, color: '#475569' }}>{L(r.ko, r.en, r.vi)}</td>
-                      <td style={td}>
-                        <b>{show(b.v)}</b>
-                        {b.rate !== null && <span style={{ color: '#8B95A1' }}> ({b.rate.toFixed(1)}%)</span>}
-                      </td>
-                      <td style={td}>
-                        <b>{show(a.v)}</b>
-                        {a.rate !== null && <span style={{ color: '#8B95A1' }}> ({a.rate.toFixed(1)}%)</span>}
-                      </td>
-                      <td style={{ ...td, fontWeight: 700, color: good ? '#0F7B6C' : bad ? TONE.bad : '#8B95A1' }}>
-                        {dp !== null
-                          ? `${dp > 0 ? '+' : ''}${dp.toFixed(1)}%p`
-                          : dv !== null ? `${dv > 0 ? '+' : ''}${dv.toFixed(1)}%` : '—'}
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-          <div style={{ fontSize: 10.5, color: '#8B95A1', marginTop: 10, lineHeight: 1.6 }}>
-            {data.before.signup_from_cv !== undefined && (
-              <div style={{ marginBottom: 6 }}>
-                <b style={{ color: '#475569' }}>{L('비고 · 가입', 'Note · signups', 'Ghi chú · đăng ký')}</b>
-                {' — '}
-                {L('/cv 진입자 중 회원가입', 'signed up among /cv visitors', 'đăng ký trong số khách /cv')}{' '}
-                <b style={{ color: '#191F28' }}>{show(data.before.signup_from_cv)}</b>
-                {' → '}
-                <b style={{ color: '#191F28' }}>{show(data.after.signup_from_cv)}</b>
-                {(() => {
-                  const bp = data.before.cv_view ? (data.before.signup_from_cv / data.before.cv_view) * 100 : null
-                  const ap = data.after.cv_view ? (data.after.signup_from_cv / data.after.cv_view) * 100 : null
-                  if (bp === null || ap === null) return null
-                  return <span style={{ color: '#8B95A1' }}>
-                    {' '}({bp.toFixed(1)}% → {ap.toFixed(1)}%,{' '}
-                    <b style={{ color: ap - bp > 0 ? '#0F7B6C' : ap - bp < 0 ? TONE.bad : '#8B95A1' }}>
-                      {ap - bp > 0 ? '+' : ''}{(ap - bp).toFixed(1)}%p
-                    </b>)
-                  </span>
-                })()}
-              </div>
-            )}
-            {L('사람(client_id) 단위 · 비율은 진입 대비 · 하루가 차기 전에는 창 길이만큼의 실제 건수, 하루를 넘기면 완료된 날수로 나눈 일 평균이다(부분 일수는 버린다). 표본이 수백 명 아래면 방향만 읽고 유의성은 말하지 말 것 — 하루 진입이 100 안팎이라 며칠은 모아야 한다.',
-               'Per client_id · rates are share of views. Below a few hundred users read direction only, not significance.',
-               'Theo client_id · tỷ lệ so với lượt xem. Dưới vài trăm người chỉ đọc xu hướng.')}
-          </div>
-        </>
+        <div style={{
+          overflowX: 'auto',
+          /* 기간을 길게 잡으면 표가 화면을 통째로 먹는다 — 10일치 높이에서 자르고
+             안에서만 스크롤한다. 헤더는 붙여 둬야 아래로 내려가도 열을 읽는다. */
+          overflowY: data.days.length > 10 ? 'auto' : 'visible',
+          maxHeight: data.days.length > 10 ? 420 : undefined,
+        }}>
+          <table style={{ borderCollapse: 'collapse', width: '100%', minWidth: 560 }}>
+            <thead style={{ position: 'sticky', top: 0, background: '#fff', zIndex: 1 }}>
+              <tr style={{ borderBottom: '1px solid #e5e7eb' }}>
+                <th style={{ ...th, textAlign: 'left' }}>{L('날짜', 'Date', 'Ngày')}</th>
+                {DAILY_COLS.map(c => <th key={c.key} style={th}>{L(c.ko, c.en, c.vi)}</th>)}
+              </tr>
+            </thead>
+            <tbody>
+              {data.days.map(row => {
+                const base = row.cv_view || 0
+                const dep = row.day === DEPLOY_DAY
+                return (
+                  <tr key={`${row.day}${row.part || ''}`} style={{
+                    borderBottom: '1px solid #f4f5f6',
+                    background: dep ? '#FFF7ED' : undefined,
+                  }}>
+                    <td style={{ ...td, textAlign: 'left', color: '#475569', fontWeight: dep ? 700 : 500 }}>
+                      {row.day.slice(5)}
+                      {/* 배포 당일은 14:13 을 기준으로 두 줄이라 어느 쪽인지 시각을 붙인다 */}
+                      {row.part === 'before' && <span style={{ color: '#8B95A1', fontWeight: 500 }}>{' ~14:13'}</span>}
+                      {row.part === 'after' && <>
+                        <span style={{ color: '#8B95A1', fontWeight: 500 }}>{' 14:13~'}</span>
+                        <span style={{ color: TONE.warn, fontSize: 10.5, fontWeight: 700 }}>{' '}{L('배포', 'deploy', 'triển khai')}</span>
+                      </>}
+                    </td>
+                    {DAILY_COLS.map(c => {
+                      const v = row[c.key] ?? 0
+                      return (
+                        <td key={c.key} style={{ ...td, fontWeight: c.strong ? 700 : 400 }}>
+                          {fmt(v)}
+                          {c.rate && base > 0 && (
+                            <span style={{ color: '#8B95A1', fontWeight: 400 }}> ({pct(v, base)}%)</span>
+                          )}
+                        </td>
+                      )
+                    })}
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+          {data.truncated && (
+            <div style={{ fontSize: 11, color: TONE.warn, marginTop: 8 }}>
+              {L('행 상한에 걸려 일부만 집계했다 — 기간을 좁혀서 볼 것.', 'Row cap hit — narrow the range.', 'Đã chạm giới hạn — thu hẹp khoảng ngày.')}
+            </div>
+          )}
+        </div>
       )}
+      {data && data.days?.length > 0 && (() => {
+        /* 배포일(8/25)을 기준으로 앞뒤를 갈라 한 줄로 남긴다. 배포는 그날 14:13 이라
+           8/25 하루는 전후가 섞여 있어 양쪽 어디에도 넣지 않고 뺀다.
+           선택 기간에 따라 앞뒤 일수가 다르므로 건수보다 비율(진입 대비)이 비교 대상이다. */
+        /* 배포 당일은 14:13 으로 갈라 두 줄로 오므로 각각 제 편에 넣는다 — 하루치를
+           통째로 버리지 않는다. 반쪽 날은 일수를 0.5 로 센다. */
+        const before = data.days.filter(r => r.day < DEPLOY_DAY || (r.day === DEPLOY_DAY && r.part === 'before'))
+        const after = data.days.filter(r => r.day > DEPLOY_DAY || (r.day === DEPLOY_DAY && r.part === 'after'))
+        const dayCount = (rows) => {
+          const n = rows.reduce((a, r) => a + (r.part ? 0.5 : 1), 0)
+          return Number.isInteger(n) ? n : n.toFixed(1)
+        }
+        const sum = (rows, k) => rows.reduce((a, r) => a + (r[k] || 0), 0)
+        const line = (rows, label) => {
+          if (!rows.length) return null
+          const v = sum(rows, 'cv_view'), su = sum(rows, 'signup'), rg = sum(rows, 'cv_register_success')
+          return (
+            <div key={label} style={{ marginTop: 3 }}>
+              <b style={{ color: '#475569' }}>{label}</b>
+              <span style={{ color: '#C4C9CF' }}>{` (${dayCount(rows)}${L('일', 'd', 'ngày')})`}</span>{' — '}
+              {L('진입', 'views', 'lượt xem')} <b style={{ color: '#191F28' }}>{fmt(v)}</b>
+              {' · '}{L('가입', 'signups', 'đăng ký')} <b style={{ color: '#191F28' }}>{fmt(su)}</b>
+              {v > 0 && ` (${pct(su, v)}%)`}
+              {' · '}{L('이력서 등록', 'registered', 'đăng CV')} <b style={{ color: '#191F28' }}>{fmt(rg)}</b>
+              {v > 0 && ` (${pct(rg, v)}%)`}
+              {su > rg && <>{' · '}{L('가입만', 'signup only', 'chỉ đăng ký')} <b style={{ color: '#191F28' }}>{fmt(su - rg)}</b></>}
+            </div>
+          )
+        }
+        const both = before.length && after.length
+        return (
+          <div style={{ fontSize: 11.5, color: '#8B95A1', marginTop: 10, lineHeight: 1.7 }}>
+            {line(before, L('배포 전', 'Before deploy', 'Trước triển khai'))}
+            {line(after, L('배포 후', 'After deploy', 'Sau triển khai'))}
+            {both
+              ? <div style={{ color: '#C4C9CF', marginTop: 3 }}>
+                  {L('배포일(08-25)은 14:13 을 기준으로 갈라 각 편에 넣었다(표에서도 두 줄). 기간 길이가 달라 건수가 아니라 괄호 안 비율을 비교할 것.',
+                     'The deploy day (08-25) is split at 14:13 and counted on each side. Compare the rates, not the counts.',
+                     'Ngày triển khai (08-25) được tách tại 14:13. So sánh tỷ lệ, không phải số lượng.')}
+                </div>
+              : <div style={{ color: '#C4C9CF', marginTop: 3 }}>
+                  {L('선택한 기간이 배포일 한쪽에만 걸쳐 있다 — 전후 비교를 보려면 08-25 를 사이에 두고 기간을 잡을 것.',
+                     'The selected range sits on one side of the deploy — span 08-25 to compare.',
+                     'Khoảng đã chọn chỉ nằm một phía của ngày triển khai.')}
+                </div>}
+          </div>
+        )
+      })()}
     </div>
   )
 }
@@ -439,8 +441,8 @@ export default function ResumeDropoffSection({ token, lang, dateRange }) {
   const depthFrom = dateRange.from < SCROLL_SINCE ? SCROLL_SINCE : dateRange.from
   const depthClamped = depthFrom !== dateRange.from
   const depth = useAdmin(showDepth ? `/api/admin/cv-dropoff?from=${depthFrom}&to=${dateRange.to}` : null, token)
-  // 배포 전후 비교는 피커와 무관하게 배포 시각에 고정 — 키에 날짜를 넣지 않는다.
-  const cmp = useAdmin('/api/admin/cv-deploy-compare', token)
+  // 일별 표는 상단 날짜 피커를 그대로 따른다.
+  const daily = useAdmin(`/api/admin/cv-daily?${range}`, token)
 
   const sigCount = Object.fromEntries((sig.data?.steps || []).map(s => [s.event, s.count]))
 
@@ -453,8 +455,8 @@ export default function ResumeDropoffSection({ token, lang, dateRange }) {
 
       <FunnelCard f={FUNNELS[0]} res={f0} L={L} />
 
-      {/* 이번 배포가 실제로 무엇을 바꿨나 — 같은 길이의 창 두 개 */}
-      <DeployCompareCard res={cmp} L={L} />
+      {/* 날짜 × 단계 — 배포일 전후와 일간 변동을 한 표에서 본다 */}
+      <DailyFunnelTable res={daily} L={L} dateRange={dateRange} />
 
 
       {/* 이탈·실패 신호 — 퍼널 단계가 아니라 건수 */}
