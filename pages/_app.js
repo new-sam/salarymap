@@ -81,6 +81,10 @@ export default function App({ Component, pageProps }) {
   // Ad-landing routes get a static nav. /promo 는 푸터까지 차단(exit leak),
   // /cv 는 푸터에 언어 스위처가 필요해 노출한다.
   const isAdLanding = router.pathname === '/cv' || router.pathname.startsWith('/promo');
+  /* 네비 고정 해제는 /promo 만. /cv 는 헤더를 되살린다 — 하단 탭바가 어차피 이탈
+     경로라 헤더만 막아 봐야 일관성만 잃고, 스크롤을 올려도 위가 안 돌아오는 게
+     고장으로 읽힌다. /cv 의 이탈은 헤더가 아니라 폼 도달로 푼다. */
+  const isStaticNav = router.pathname.startsWith('/promo');
   const isPromoLanding = router.pathname.startsWith('/promo');
   // /ktc 는 FYI 헤더(GlobalNav)·푸터(GlobalFooter)를 그대로 쓰는 캠페인 랜딩.
   // 자체로 갖는 건 섹션 탭바뿐이고, 하단 탭바·앱 설치 모달만 전환 동선을 끊어서 제외한다.
@@ -101,8 +105,8 @@ export default function App({ Component, pageProps }) {
     else delete document.body.dataset.companyMobile;
     if (isJobDetail) document.body.dataset.jobDetailMobile = '1';
     else delete document.body.dataset.jobDetailMobile;
-    // Ad-landing routes (/cv, /promo/*) get a static nav (not sticky)
-    if (isAdLanding) document.body.dataset.adLanding = '1';
+    // /promo 만 네비를 흐름 안에 둔다(/cv 는 기본 sticky 로 되돌렸다)
+    if (isStaticNav) document.body.dataset.adLanding = '1';
     else delete document.body.dataset.adLanding;
     if (isCard) document.body.dataset.cardMobile = '1';
     else delete document.body.dataset.cardMobile;
@@ -118,7 +122,7 @@ export default function App({ Component, pageProps }) {
     // /private/* 는 헤더·탭바를 안 그리므로 그 자리 예약도 같이 걷어낸다.
     if (isPrivate || isSurvey) document.body.dataset.privateMobile = '1';
     else delete document.body.dataset.privateMobile;
-  }, [isCompany, isJobDetail, isAdLanding, isCard, isAdmin, isStandaloneLanding, isKcvLanding, isPrivate, isSurvey]);
+  }, [isCompany, isJobDetail, isStaticNav, isCard, isAdmin, isStandaloneLanding, isKcvLanding, isPrivate, isSurvey]);
   const activePage = activePageFor(router.pathname);
 
   // 웹 첫 진입(세션당 1회) — landing 은 홈에서만 떠서 공고/CV/회사 링크 등 직접 유입을 놓친다.

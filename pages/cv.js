@@ -14,6 +14,10 @@ import QuickApplyJobList from '../components/jobs/QuickApplyJobList'
 /* cvMeta 가 모든 이벤트에 실어 보내는 현재 변이. 컴포넌트가 플래그를 받아 확정한 뒤
    여기에 써 넣는다 — 그래야 퍼널 단계별 이벤트를 변이로 갈라 볼 수 있다. */
 let currentVariant = null
+/* 히어로 변이(공고 카드 / 축하금). 8/25 배포의 스크롤 깊이·폼 도달 수치는 축하금
+   히어로 기준이라 그대로 이어 보면 안 된다 — 페이지 구조가 바뀌어 25/50/75% 가
+   가리키는 지점 자체가 달라졌다. 모든 /cv 이벤트에 실어 두 시대를 갈라 놓는다. */
+let currentHero = null
 
 /* Funnel-event meta — UTM (sessionStorage) + language preference, attached to
    every /cv event so we can slice by ad campaign and locale in analytics. */
@@ -31,6 +35,7 @@ function cvMeta() {
        보면서 전부 'ko' 로 기록된다. 렌더된 언어를 1순위로 본다. */
     lang: (typeof document !== 'undefined' && document.documentElement.lang) || localStorage.getItem('fyi_lang') || 'vi',
     variant: currentVariant,
+    hero: currentHero,
   }
 }
 function fileMeta(f) {
@@ -138,6 +143,9 @@ export default function CvLanding() {
   const [errMsg, setErrMsg] = useState('')
   const [pendingHint, setPendingHint] = useState('')
   const [jobs, setJobs] = useState([])
+  /* 히어로 변이는 공고가 와야 정해진다(자체 공고 3건 미만이면 기존 히어로).
+     실패해도 세워야 cv_view 가 영영 안 나가는 일이 없다. */
+  const [jobsLoaded, setJobsLoaded] = useState(false)
   const [resumeUrl, setResumeUrl] = useState(null)
   // 기존 등록자: user_profiles.resume_url이 이미 있으면 업로드 퍼널 대신 등록됨 화면을 보여준다.
   const [existingResume, setExistingResume] = useState(null)
@@ -147,16 +155,14 @@ export default function CvLanding() {
   const L = (ko, en, vi) => (lang === 'vi' ? vi : lang === 'en' ? en : ko)
   const fileRef = useRef(null)
   const formAnchorRef = useRef(null)
-  // 히어로 CTA 와 하단 바는 같은 문구·같은 목적지다 — 둘이 동시에 보이면 같은 버튼이
-  // 두 개다. 히어로 CTA 가 화면 위로 사라진 뒤에만 하단 바를 띄우려고 위치를 잰다.
-  const heroCtaRef = useRef(null)
+  // 이벤트 바가 내려보낼 곳 — 축하금 조건이 적힌 안내 섹션.
+  const howAnchorRef = useRef(null)
   // 스크롤 목적지는 섹션(formAnchorRef)이 아니라 카드다 — 섹션은 padding-top 만
   // 90px(모바일 80px)이라 섹션 맨 위로 보내면 카드가 화면 한참 아래에서 시작한다.
   const formCardRef = useRef(null)
   // 모바일 하단 스크롤 다운 버튼 — 긴 랜딩을 단계별로 넘겨준다
   // (STEP 1 → 2 → 3 카드 → 등록 폼). 폼이 화면 절반 안에 들어오면
   // 폼 자체 CTA와 겹치지 않게 숨긴다.
-  const [showScrollDown, setShowScrollDown] = useState(false)
   const showSuccess = status === 'success' || (process.env.NODE_ENV !== 'production' && router.query.successPreview === '1')
 
   // ── 가입 선행 ───────────────────────────────────────────────────
@@ -171,7 +177,7 @@ export default function CvLanding() {
     const v = new URLSearchParams(window.location.search).get('variant')
     if (v === 'signup_first' || v === 'control') setForced(v)
   }, [])
-  const variantReady = flagsLoaded
+  const variantReady = flagsLoaded && jobsLoaded
   const signupFirst = variantReady && (
     forced ? forced === 'signup_first' : !!flags.cv_signup_first
   )
@@ -182,6 +188,39 @@ export default function CvLanding() {
   useEffect(() => {
     if (variantReady) currentVariant = signupFirst ? 'signup_first' : 'control'
   }, [variantReady, signupFirst])
+
+  /* 히어로에 띄울 공고 — 크롤링은 제외한다. 활성 공고의 95% 가 크롤링인데 거기로 간
+     지원 1,479건의 열람·반려·인터뷰가 전부 0이다(받는 계정이 없다). 히어로에서 본
+     공고에 지원했는데 아무 데도 안 닿으면 이력서를 얻는 것보다 잃는 게 크다.
+     급여 상한이 높은 순으로 뽑되 한 회사가 카드를 독식하지 않게 회사당 하나만 쓴다. */
+  const heroJobs = useMemo(() => {
+    const OURS = new Set(['company_self', 'ktc'])
+    const cap = (j) => {
+      const v = [j.salary_max, j.salary_min].filter((x) => x > 0)
+      const m = v.length ? Math.max(...v) / 1_000_000 : 0
+      return m >= 3 && m <= 300 ? m : 0   // 단위 오입력(원 단위·0) 방어
+    }
+    const seen = new Set()
+    return jobs
+      .filter((j) => OURS.has(j.source) && cap(j) > 0)
+      .sort((a, b) => cap(b) - cap(a))
+      .filter((j) => { if (seen.has(j.company)) return false; seen.add(j.company); return true })
+      .slice(0, 3)
+      .map((j) => ({ ...j, capM: cap(j) }))
+  }, [jobs])
+  const heroJobsOn = !!flags.cv_hero_jobs && heroJobs.length >= 3
+  /* 이미 이력서를 낸 사람에게 카드는 "폼으로 내려가라"가 아니라 "이 공고를 보라"다.
+     등록이 끝났는데 폼으로 스크롤시키면 할 일이 없는 자리로 보내는 셈이다.
+     이번 세션에서 막 올렸거나(showSuccess·resumeUrl), 전부터 갖고 있으면(existingResume)
+     상세로 보낸다. */
+  const heroJobsToDetail = showSuccess || !!existingResume || !!resumeUrl
+  /* 히어로 변이도 이벤트에 실어야 8/25(축하금 히어로) 수치와 갈라 볼 수 있다.
+     heroJobsOn 이 여기서야 정해지므로 currentVariant 와 같은 이펙트에 못 넣는다 —
+     의존성 배열이 선언보다 먼저 평가돼 TDZ 로 터진다. 이펙트는 선언 순서대로 도니
+     아래 cv_view 이펙트보다 항상 먼저 확정된다. */
+  useEffect(() => {
+    if (variantReady) currentHero = heroJobsOn ? 'jobs' : 'bonus'
+  }, [variantReady, heroJobsOn])
   // 4-step journey to the 1,000,000 VND bonus. The bar grows from 0 to
   // step-1 ("Resume registered") and "lands" on it — at that instant the
   // step label flips to "등록 완료" and a single viewport-wide confetti
@@ -314,6 +353,7 @@ export default function CvLanding() {
         setJobs(sorted)
       })
       .catch(() => {})
+      .finally(() => setJobsLoaded(true))
   }, [])
 
   const handleFile = (f) => {
@@ -447,6 +487,7 @@ export default function CvLanding() {
 
   const moreJobsHref = '/jobs'
 
+
   // 파일 피커가 열리는 지점은 드롭존과 STEP2 CTA 두 곳인데 드롭존에만 계측이 없었다.
   // 그래서 "피커 열림"이 "파일 선택"보다 작게 집계돼(퍼널 3단계 < 4단계) 첨부 직전
   // 이탈 — PDF 미보유 —을 셀 수가 없었다. 두 경로를 한 이벤트로 묶고 via 로 가른다.
@@ -515,37 +556,10 @@ export default function CvLanding() {
   //   hero       = 히어로 '바로 등록하기'
   //   scrolldown = 하단 스크롤다운 버튼
   //   scroll     = 아무것도 안 누르고 직접 스크롤
+  //   howcta     = 폼 아래 안내 섹션 끝의 CTA (읽고 되돌아온 사람)
   const arrivedVia = useRef('scroll')
   const formViewTracked = useRef(false)
   const cvViewAt = useRef(typeof performance !== 'undefined' ? performance.now() : 0)
-
-  useEffect(() => {
-    const update = () => {
-      const formTop = formAnchorRef.current?.getBoundingClientRect().top ?? Infinity
-      // 히어로 CTA 아랫면이 화면 위로 넘어갔는가 — 아직 보이면 하단 바는 중복이다.
-      const heroBottom = heroCtaRef.current?.getBoundingClientRect().bottom ?? Infinity
-      // 탭바가 빠지는 그 순간 자리를 물려받는다 — _app.js 가 스크롤을 내릴 때
-      // data-chrome-hidden 을 켜므로 같은 신호를 읽는다. 히어로가 78vh 라
-      // '히어로 CTA 가 완전히 사라질 때'(≈570px)까지 기다리면 탭바가 빠진 빈 자리가
-      // 한참 남는다. 대신 스크롤을 올려 탭바가 돌아오면 히어로 CTA 도 같이 돌아오는
-      // 구간이라 바를 접는다 — 그때는 같은 버튼이 두 개다.
-      // 히어로를 완전히 지난 뒤부터는 탭바와 무관하게 계속 띄운다.
-      const chromeHidden = document.body.dataset.chromeHidden === '1'
-      const formNotReached = formTop >= window.innerHeight * 0.5
-      setShowScrollDown(formNotReached && (chromeHidden || heroBottom < 0))
-    }
-    update()
-    window.addEventListener('scroll', update, { passive: true })
-    // _app.js 는 rAF 안에서 data-chrome-hidden 을 켠다 — 스크롤 이벤트만 듣고 있으면
-    // 같은 이벤트에서 우리가 먼저 읽어 한 프레임 늦은 값을 본다. 속성이 바뀌는 순간을
-    // 직접 구독해 탭바가 빠지는 프레임에 바로 자리를 물려받는다.
-    const mo = new MutationObserver(update)
-    mo.observe(document.body, { attributes: true, attributeFilter: ['data-chrome-hidden'] })
-    return () => {
-      window.removeEventListener('scroll', update)
-      mo.disconnect()
-    }
-  }, [])
 
   /* 폼에 닿지 못한 절반이 아예 안 내려간 건지, 내려가다 만 건지 구분한다 —
      둘은 처방이 반대다(거리·신호를 고칠 것인가, 중간 콘텐츠를 고칠 것인가).
@@ -569,6 +583,9 @@ export default function CvLanding() {
           meta: {
             ...cvMeta(),
             pct: m,
+            /* 문서 높이를 같이 남긴다 — 히어로 개편으로 페이지가 짧아져 같은 25% 가
+               가리키는 지점이 달라졌다. 높이 없이는 두 시대의 pct 를 비교할 수 없다. */
+            docH: Math.round(document.documentElement.scrollHeight),
             ms: Math.round((typeof performance !== 'undefined' ? performance.now() : 0) - cvViewAt.current),
           },
           page: '/cv',
@@ -643,15 +660,6 @@ export default function CvLanding() {
     return cleanup
   }, [showSuccess, existingResume])
 
-  // 카드를 한 장씩 거쳐 내려가던 동작을 폼 직행으로 바꾼다 — 모바일 축소로 카드
-  // 세 장이 1,404px → 380px 이 되어 한 화면에 다 들어오므로 단계별 이동이 의미가 없다.
-  // style 을 meta 에 남겨 교체 전후(icon/bar)를 같은 이벤트 안에서 가른다.
-  const onStickyClick = () => {
-    track('cv_scrolldown_click', { meta: { ...cvMeta(), style: 'bar' }, page: '/cv' })
-    arrivedVia.current = 'scrolldown'
-    scrollToForm()
-  }
-
   return (
     <>
       <Head>
@@ -660,24 +668,89 @@ export default function CvLanding() {
       </Head>
 
       <main className="cv-page">
+        {/* 이벤트 바 — 축하금을 히어로 안에 두면 공고 카드와 CTA 사이에서 묻힌다.
+            헤더 바로 아래 띠로 빼면 첫 화면 맨 위에서 한 번 읽히고, 히어로는 공고에
+            집중한다. 얇게 두는 게 핵심이다 — 두꺼워지면 폼이 다시 아래로 밀린다. */}
+        {heroJobsOn && (
+          /* 띠를 눌렀을 때 갈 곳이 있어야 한다 — 조건이 붙은 혜택이라 "어떤 조건이냐"가
+             바로 다음 질문이다. 밖으로 내보내지 않고 아래 안내 섹션(step3 + 지급 조건)
+             으로만 내린다. */
+          <button
+            type="button"
+            className="cv-eventbar"
+            onClick={() => {
+              track('cv_eventbar_click', { meta: cvMeta(), page: '/cv' })
+              howAnchorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+            }}
+          >
+            🎁 {t('cv.hero.jobs.bonus')}
+          </button>
+        )}
         {/* ───── HERO (center-aligned, black bg, white text) ───── */}
         <section className="cv-hero">
           <div className="cv-hero-bg" aria-hidden />
           <div className="cv-hero-inner">
-            <h1 className="cv-h1">
-              <span className="cv-h1-line cv-h1-soft">
-                {t('cv.hero.line1Pre')}
-                <img src="/fyi-logo.png" alt="FYI" className="cv-h1-logo" />
-                <span>{t('cv.hero.line1Post')}</span>
-              </span>
-              {/* data-text 는 ::after 가 같은 글자를 겹쳐 그려 광택 밴드를 입히는 데 쓴다 */}
-              <span className="cv-h1-line cv-h1-hero"><em data-text="1,000,000 VND">1,000,000 VND</em>{t('cv.hero.line2.suffix')}</span>
-            </h1>
-            <div className="cv-banknote-showcase" aria-hidden>
-              <img src="/cv/banknote-prize-v2.png" alt="" className="cv-banknote-img" />
-            </div>
+            {heroJobsOn ? (
+              /* 공고 히어로 — 축하금은 "입사 후 2개월 근속 확인 뒤" 라는 조건부 미래
+                 보상이라 지금 이력서를 올릴 이유가 못 된다. 실제 공고 카드는 확인
+                 가능한 사실이고, 광고에서도 공고 소재가 폼 도달 45.4% 로 축하금
+                 소재(31.9%)보다 높았다. */
+              <>
+                <h1 className="cv-h1 cv-h1-jobs">
+                  <span className="cv-h1-line cv-h1-soft">{t('cv.hero.jobs.line1')}</span>
+                  <span className="cv-h1-line cv-h1-lead">{t('cv.hero.jobs.line2')}</span>
+                </h1>
+                <ul className="cv-herojobs">
+                  {heroJobs.map((j) => {
+                    /* 등록 전에는 상세로 보내지 않는다 — 카드가 매력적일수록 등록 대신
+                       공고 구경으로 새기 때문이다. meta.to 로 두 경로를 갈라 둔다. */
+                    const inner = (
+                      <>
+                        <span className="cv-herojob-main">
+                          <span className="cv-herojob-title">{j.title}</span>
+                          <span className="cv-herojob-co">{j.company}</span>
+                        </span>
+                        <span className="cv-herojob-pay">{Math.round(j.capM)}<small> triệu</small></span>
+                      </>
+                    )
+                    const hit = () => track('cv_hero_job_click', {
+                      meta: { ...cvMeta(), job_id: j.id, cap: j.capM, to: heroJobsToDetail ? 'detail' : 'form' },
+                      page: '/cv',
+                    })
+                    return (
+                      <li key={j.id}>
+                        {heroJobsToDetail ? (
+                          <a href={`/jobs/${j.id}`} className="cv-herojob" onClick={hit}>{inner}</a>
+                        ) : (
+                          <button
+                            type="button"
+                            className="cv-herojob"
+                            onClick={() => { hit(); arrivedVia.current = 'hero'; scrollToForm() }}
+                          >{inner}</button>
+                        )}
+                      </li>
+                    )
+                  })}
+                </ul>
+              </>
+            ) : (
+              <>
+                <h1 className="cv-h1">
+                  <span className="cv-h1-line cv-h1-soft">
+                    {t('cv.hero.line1Pre')}
+                    <img src="/fyi-logo.png" alt="FYI" className="cv-h1-logo" />
+                    <span>{t('cv.hero.line1Post')}</span>
+                  </span>
+                  {/* data-text 는 ::after 가 같은 글자를 겹쳐 그려 광택 밴드를 입히는 데 쓴다 */}
+                  <span className="cv-h1-line cv-h1-hero"><em data-text="1,000,000 VND">1,000,000 VND</em>{t('cv.hero.line2.suffix')}</span>
+                </h1>
+                <div className="cv-banknote-showcase" aria-hidden>
+                  <img src="/cv/banknote-prize-v2.png" alt="" className="cv-banknote-img" />
+                </div>
+              </>
+            )}
             {/* 히어로 CTA — 스크롤 없이 첫 화면에서 바로 등록 폼으로 */}
-            <div className="cv-hero-cta" ref={heroCtaRef}>
+            <div className="cv-hero-cta">
               <button
                 type="button"
                 className="cv-btn cv-btn-hero"
@@ -691,106 +764,12 @@ export default function CvLanding() {
               </button>
             </div>
 
-            {/* 축하금 지급 조건 — 금액 바로 아래가 조건이 붙을 자리 */}
-            <p className="cv-hero-note">{t('cv.how.notice')}</p>
-          </div>
-        </section>
-
-        {/* ───── HOW IT WORKS ───── */}
-        <section className="cv-how">
-          <div className="cv-section-inner">
-            <h2 className="cv-h2">{t('cv.how.heading')}</h2>
-
-            <div className="cv-flow" aria-label="FYI resume reward flow">
-              <article className="cv-flow-card">
-                <div className="cv-flow-image">
-                  <img src="/cv/flow-step-1.png" alt="STEP 1. CV upload" />
-                </div>
-                <div className="cv-flow-copy">
-                  <h3>{t('cv.how.step1.title')}</h3>
-                  <p>{t('cv.how.step1.desc')}</p>
-                </div>
-              </article>
-
-              <div className="cv-flow-arrow" aria-hidden>→</div>
-
-              <article className="cv-flow-card">
-                <div className="cv-flow-image">
-                  <img src="/cv/flow-step-2.png" alt="STEP 2. FYI match" />
-                </div>
-                <div className="cv-flow-copy">
-                  <h3>{t('cv.how.step2.title')}</h3>
-                  <p>{t('cv.how.step2.desc')}</p>
-                </div>
-              </article>
-
-              <div className="cv-flow-arrow" aria-hidden>→</div>
-
-              <article className="cv-flow-card">
-                <div className="cv-flow-image">
-                  <img src="/cv/flow-step-3.png" alt="STEP 3. Hired and reward received" />
-                </div>
-                <div className="cv-flow-copy">
-                  <h3>{t('cv.how.step3.title')}</h3>
-                  <p>{t('cv.how.step3.desc')}</p>
-                </div>
-              </article>
-            </div>
-
-            <div className="cv-steps" hidden>
-              <div className="cv-step cv-step-upload">
-                <div className="cv-step-art" aria-hidden>
-                  <div className="cv-person scene-upload">
-                    <div className="cv-person-head" />
-                    <div className="cv-person-body" />
-                    <div className="cv-person-arm arm-left" />
-                    <div className="cv-person-arm arm-right" />
-                  </div>
-                  <div className="cv-scene-doc"><span /><span /><span /></div>
-                  <div className="cv-scene-tray" />
-                </div>
-                <div className="cv-step-num">01</div>
-                <div className="cv-step-title">{t('cv.how.step1.title')}</div>
-                <div className="cv-step-desc">{t('cv.how.step1.desc')}</div>
-              </div>
-
-              <div className="cv-step cv-step-match">
-                <div className="cv-step-art" aria-hidden>
-                  <div className="cv-person scene-match">
-                    <div className="cv-person-head" />
-                    <div className="cv-person-body" />
-                    <div className="cv-person-arm arm-left" />
-                    <div className="cv-person-arm arm-right" />
-                  </div>
-                  <div className="cv-scene-offer">
-                    <span />
-                    <span />
-                    <b />
-                  </div>
-                  <div className="cv-scene-bubble">✓</div>
-                </div>
-                <div className="cv-step-num">02</div>
-                <div className="cv-step-title">{t('cv.how.step2.title')}</div>
-                <div className="cv-step-desc">{t('cv.how.step2.desc')}</div>
-              </div>
-
-              <div className="cv-step cv-step-prize">
-                <div className="cv-step-art" aria-hidden>
-                  <div className="cv-person scene-prize">
-                    <div className="cv-person-head" />
-                    <div className="cv-person-body" />
-                    <div className="cv-person-arm arm-left" />
-                    <div className="cv-person-arm arm-right" />
-                  </div>
-                  <div className="cv-scene-ticket"><span>2M</span><b>VND</b></div>
-                  <div className="cv-scene-coin c1">₫</div>
-                  <div className="cv-scene-coin c2">₫</div>
-                </div>
-                <div className="cv-step-num">03</div>
-                <div className="cv-step-title">{t('cv.how.step3.title')}</div>
-                <div className="cv-step-desc">{t('cv.how.step3.desc')}</div>
-              </div>
-            </div>
+            {/* 축하금은 없애지 않는다 — 축하금 소재의 등록 완료율(12.1%)이 공고
+                소재(12.2%)와 같다. 데려오는 힘은 약해도 끝내는 힘은 같아서, 첫 화면을
+                통째로 쓰는 대신 배지 한 줄로 남긴다. 지급 조건은 폼 근처에서 밝힌다. */}
+            {/* 축하금은 상단 이벤트 바로 올렸다 — 같은 문구를 두 번 쓰면 둘 다 약해진다.
+                기존 히어로(플래그 off)는 지급 조건을 여기서 그대로 밝힌다. */}
+            {!heroJobsOn && <p className="cv-hero-note">{t('cv.how.notice')}</p>}
           </div>
         </section>
 
@@ -995,20 +974,130 @@ export default function CvLanding() {
           </div>
         </section>
 
-      </main>
+        {/* 순서: 히어로 → 등록 폼 → 안내. 안내(cv-how)가 폼 앞에 있으면 폼이
+            1.54 화면 아래로 밀린다. 그런데 폼 도달 소요 중앙값이 1.9초라 그 564px
+            섹션은 읽히지 않고 지나쳐진다 — 설득이 아니라 거리로만 작동한다.
+            결정한 사람 앞을 막지 않게 뒤로 내리고, 망설이는 사람은 폼 아래에서 읽는다. */}
+        {/* ───── HOW IT WORKS ───── */}
+        <section className="cv-how" ref={howAnchorRef}>
+          <div className="cv-section-inner">
+            <h2 className="cv-h2">{t('cv.how.heading')}</h2>
 
-      {/* 하단 고정 CTA — 아이콘만 있던 44px 원형 화살표는 무엇을 하는 버튼인지 말하지
-          않아 813명 중 3명(0.4%)만 눌렀다. 히어로에서 21.3% 가 누르는 같은 문구를 달고
-          같은 목적지로 보낸다. 히어로 CTA 가 화면 위로 사라진 뒤부터 폼이 화면에 들어오기
-          전까지만 띄운다 — 히어로가 보이는 동안은 같은 버튼이 두 개고, 폼에 닿으면 더
-          필요 없다. 스크롤한다고 숨기지는 않는다(showScrollDown). */}
-      {showScrollDown && (
-        <div className="cv-sticky">
-          <button type="button" className="cv-btn cv-btn-sticky" onClick={onStickyClick}>
-            {t('cv.sticky.cta')} <IconArrowRight />
-          </button>
-        </div>
-      )}
+            <div className="cv-flow" aria-label="FYI resume reward flow">
+              <article className="cv-flow-card">
+                <div className="cv-flow-image">
+                  <img src="/cv/flow-step-1.png" alt="STEP 1. CV upload" />
+                </div>
+                <div className="cv-flow-copy">
+                  <h3>{t('cv.how.step1.title')}</h3>
+                  <p>{t('cv.how.step1.desc')}</p>
+                </div>
+              </article>
+
+              <div className="cv-flow-arrow" aria-hidden>→</div>
+
+              <article className="cv-flow-card">
+                <div className="cv-flow-image">
+                  <img src="/cv/flow-step-2.png" alt="STEP 2. FYI match" />
+                </div>
+                <div className="cv-flow-copy">
+                  <h3>{t('cv.how.step2.title')}</h3>
+                  <p>{t('cv.how.step2.desc')}</p>
+                </div>
+              </article>
+
+              <div className="cv-flow-arrow" aria-hidden>→</div>
+
+              <article className="cv-flow-card">
+                <div className="cv-flow-image">
+                  <img src="/cv/flow-step-3.png" alt="STEP 3. Hired and reward received" />
+                </div>
+                <div className="cv-flow-copy">
+                  <h3>{t('cv.how.step3.title')}</h3>
+                  <p>{t('cv.how.step3.desc')}</p>
+                </div>
+              </article>
+            </div>
+
+            <div className="cv-steps" hidden>
+              <div className="cv-step cv-step-upload">
+                <div className="cv-step-art" aria-hidden>
+                  <div className="cv-person scene-upload">
+                    <div className="cv-person-head" />
+                    <div className="cv-person-body" />
+                    <div className="cv-person-arm arm-left" />
+                    <div className="cv-person-arm arm-right" />
+                  </div>
+                  <div className="cv-scene-doc"><span /><span /><span /></div>
+                  <div className="cv-scene-tray" />
+                </div>
+                <div className="cv-step-num">01</div>
+                <div className="cv-step-title">{t('cv.how.step1.title')}</div>
+                <div className="cv-step-desc">{t('cv.how.step1.desc')}</div>
+              </div>
+
+              <div className="cv-step cv-step-match">
+                <div className="cv-step-art" aria-hidden>
+                  <div className="cv-person scene-match">
+                    <div className="cv-person-head" />
+                    <div className="cv-person-body" />
+                    <div className="cv-person-arm arm-left" />
+                    <div className="cv-person-arm arm-right" />
+                  </div>
+                  <div className="cv-scene-offer">
+                    <span />
+                    <span />
+                    <b />
+                  </div>
+                  <div className="cv-scene-bubble">✓</div>
+                </div>
+                <div className="cv-step-num">02</div>
+                <div className="cv-step-title">{t('cv.how.step2.title')}</div>
+                <div className="cv-step-desc">{t('cv.how.step2.desc')}</div>
+              </div>
+
+              <div className="cv-step cv-step-prize">
+                <div className="cv-step-art" aria-hidden>
+                  <div className="cv-person scene-prize">
+                    <div className="cv-person-head" />
+                    <div className="cv-person-body" />
+                    <div className="cv-person-arm arm-left" />
+                    <div className="cv-person-arm arm-right" />
+                  </div>
+                  <div className="cv-scene-ticket"><span>2M</span><b>VND</b></div>
+                  <div className="cv-scene-coin c1">₫</div>
+                  <div className="cv-scene-coin c2">₫</div>
+                </div>
+                <div className="cv-step-num">03</div>
+                <div className="cv-step-title">{t('cv.how.step3.title')}</div>
+                <div className="cv-step-desc">{t('cv.how.step3.desc')}</div>
+              </div>
+            </div>
+            {/* 지급 조건. 새 히어로는 축하금을 상단 띠로 올리면서 조건을 떨궜다 —
+                조건부 혜택은 조건이 어딘가에 반드시 보여야 한다. 여기가 그 자리다. */}
+            <p className="cv-how-notice">{t('cv.how.notice')}</p>
+            {/* 안내를 폼 아래로 내리면서 이 섹션이 페이지의 끝이 됐다 — 세 단계를 읽고
+                설득된 사람이 돌아갈 길이 없다. 폼으로 되돌리는 CTA 를 붙인다.
+                이미 등록한 사람에게는 할 일이 없으므로 감춘다. */}
+            {!heroJobsToDetail && (
+              <div className="cv-how-cta">
+                <button
+                  type="button"
+                  className="cv-btn"
+                  onClick={() => {
+                    track('cv_how_cta_click', { meta: cvMeta(), page: '/cv' })
+                    arrivedVia.current = 'howcta'
+                    scrollToForm()
+                  }}
+                >
+                  {t('cv.sticky.cta')} <IconArrowRight />
+                </button>
+              </div>
+            )}
+          </div>
+        </section>
+
+      </main>
 
       {/* 등록 완료 → 방금 올린 이력서로 맞는 공고 바로 지원 (원탭) */}
       {showJobModal && modalJobs.length > 0 && (
@@ -1354,6 +1443,8 @@ export default function CvLanding() {
           letter-spacing: -1.4px;
           color: #1a1612;
           margin-bottom: 14px;
+          /* 한국어 제목이 단어 중간에서 꺾이지 않게. .cv-h2 는 이 한 곳에서만 쓴다. */
+          word-break: keep-all;
         }
         .cv-h2 em { font-style: normal; color: #ff6000; font-variant-numeric: tabular-nums; }
         .cv-h2-sub {
@@ -1365,6 +1456,8 @@ export default function CvLanding() {
 
         /* ───── How it works ───── */
         .cv-how {
+          /* 헤더(52px)와 이벤트 띠(38px)가 위를 덮는다 — 그만큼 띄워야 제목부터 보인다. */
+          scroll-margin-top: 98px;
           padding: 110px 0;
           background: #fbf8f3;
           border-top: 1px solid rgba(26,22,18,0.06);
@@ -1441,6 +1534,137 @@ export default function CvLanding() {
         }
         /* 축하금 조건 — 지폐 에셋 바로 아래. 히어로는 검정 배경이라 글자색은 흰색 계열.
            문구 안의 \n 을 살려(pre-line) 조건 두 개를 줄로 나눈다. */
+        /* ───── 공고 히어로 (cv_hero_jobs) ───── */
+        /* 기존 h1 은 1,000,000 VND 한 줄을 크게 띄우려고 clamp 상한이 78px 이다.
+           공고 카드가 아래에 오면 그 크기로는 첫 화면을 다 먹어 카드가 밀린다. */
+        /* .cv-hero-inner 는 폭이 뷰포트보다 넓게 잡힐 수 있다(내부에 100vw 짜리 배경·
+           그리드가 있다). 부모 100% 에 기대면 그대로 넘치므로 뷰포트로 직접 묶는다. */
+        .cv-h1-jobs {
+          font-size: clamp(22px, min(3.2vw, 5.2vh), 40px);
+          letter-spacing: -1.2px;
+          gap: 6px;
+          max-width: calc(100vw - 32px);
+          word-break: keep-all;
+        }
+        .cv-h1-lead { color: #ff8a40; }
+        /* .cv-h1-soft 는 0.42em — 원래 히어로(48~78px) 기준이라 22px 짜리 공고 히어로
+           밑에서는 10px 로 쪼그라든다. 이 히어로 안에서는 절대값으로 잡는다. */
+        .cv-h1-jobs .cv-h1-soft {
+          font-size: clamp(16px, 4.4vw, 22px);
+          font-weight: 700;
+          letter-spacing: -0.4px;
+          margin-bottom: 0;
+          color: rgba(255,255,255,0.88);
+        }
+
+        .cv-herojobs {
+          list-style: none;
+          /* 바깥 여백이 126px 인데 안쪽이 8~22px 이면 내용이 한 덩어리로 뭉쳐 빈 공간에
+             떠 보인다. 남는 높이를 바깥에서 안으로 옮긴다. */
+          margin: clamp(24px, 3.4vh, 34px) 0 0;
+          padding: 0;
+          width: min(460px, calc(100vw - 40px));
+          display: flex;
+          flex-direction: column;
+          gap: 11px;
+        }
+        /* 카드는 버튼이다 — 공고 상세로 보내면 이력서 등록 대신 이탈을 만든다.
+           눌러도 폼으로 스크롤만 한다(cv_hero_job_click 으로 새는지 확인). */
+        .cv-herojob {
+          width: 100%;
+          box-sizing: border-box;
+          /* 등록 완료 후에는 같은 모양의 <a> 로 바뀐다 — 밑줄이 생기지 않게. */
+          text-decoration: none;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 12px 14px;
+          border-radius: 14px;
+          border: 1px solid rgba(255,255,255,0.16);
+          /* 안드로이드 웹뷰는 backdrop-filter 지원이 들쭉날쭉하다 — 흐림이 안 걸려도
+             읽히도록 배경 자체를 충분히 올려 두고, 흐림은 지원될 때만 얹는다. */
+          background: rgba(255,255,255,0.10);
+          -webkit-backdrop-filter: blur(8px);
+          backdrop-filter: blur(8px);
+          color: #fff;
+          text-align: left;
+          cursor: pointer;
+          transition: background .18s, border-color .18s, transform .18s;
+        }
+        .cv-herojob:hover { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.24); }
+        .cv-herojob:active { transform: scale(0.99); }
+        .cv-herojob:focus-visible { outline: 2px solid #ff8a40; outline-offset: 2px; }
+        .cv-herojob-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+        /* 제목이 길면 카드 높이가 들쭉날쭉해져 세 장이 어긋난다 — 한 줄로 자른다. */
+        .cv-herojob-title {
+          font-size: 14px;
+          font-weight: 700;
+          line-height: 1.3;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        .cv-herojob-co {
+          font-size: 11.5px;
+          color: rgba(255,255,255,0.62);
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        .cv-herojob-pay {
+          flex-shrink: 0;
+          /* Geist Mono 는 이 프로젝트에 웹폰트로 실려 있지 않다 — 앱 웹뷰에서 시스템
+             monospace 로 떨어지면 폭·굵기가 제각각이라 카드가 어긋난다. 본문 폰트에
+             tabular-nums 만 얹어 자릿수만 맞춘다. */
+          font-variant-numeric: tabular-nums lining-nums;
+          font-size: 18px;
+          font-weight: 800;
+          color: #ffb37a;
+          letter-spacing: -0.5px;
+        }
+        .cv-herojob-pay small { font-size: 11px; font-weight: 600; opacity: 0.75; margin-left: 2px; }
+
+        /* 헤더와 히어로 사이 얇은 띠. 히어로가 어두워서 주황 단색이 그대로 튄다. */
+        .cv-how-cta {
+          margin: 26px auto 0;
+          width: min(360px, 100%);
+        }
+        .cv-how-notice {
+          max-width: 560px;
+          margin: 28px auto 0;
+          text-align: center;
+          font-size: 12px;
+          line-height: 1.7;
+          color: rgba(26,22,18,0.45);
+          word-break: keep-all;
+          white-space: pre-line;
+        }
+        /* 헤더(모바일 fixed 52px) 바로 아래에 붙는다. 헤더가 스크롤 업에 돌아올 때
+           같이 돌아와야 하나로 읽힌다 — 숨을 때도 헤더 높이만큼 더 올려 완전히 뺀다. */
+        .cv-eventbar {
+          position: sticky;
+          top: 56px;
+          z-index: 190;
+          width: 100%;
+          border: 0;
+          cursor: pointer;
+          transition: transform .25s ease;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          min-height: 38px;
+          padding: 9px 16px;
+          background: linear-gradient(90deg, #ff6000 0%, #ff8a40 50%, #ff6000 100%);
+          color: #fff;
+          font-size: 13px;
+          font-weight: 800;
+          letter-spacing: -0.2px;
+          text-align: center;
+          word-break: keep-all;
+          line-height: 1.35;
+        }
+
         .cv-hero-note {
           max-width: 560px;
           margin: clamp(12px, 2vh, 20px) auto 0;
@@ -2044,7 +2268,8 @@ export default function CvLanding() {
         /* ───── Form section ───── */
         .cv-form-section {
           padding: 90px 24px 64px;
-          scroll-margin-top: 80px;
+          /* 헤더가 다시 sticky 가 되면서 폼 상단이 그 아래로 묻혔다 — 띠 높이까지 더 띄운다. */
+          scroll-margin-top: 98px;
           background: #fff;
         }
         .cv-form-wrap {
@@ -3071,32 +3296,6 @@ export default function CvLanding() {
         .cv-conds-link a:hover { text-decoration: underline; }
 
         /* ───── Sticky CTA (mobile) ───── */
-        /* 하단 탭바(.mtab, 60px) 바로 위에 앉는다. 스크롤을 내리면 _app.js 가
-           data-chrome-hidden 을 켜고 탭바가 translateY(100%) 로 빠지는데, 그때 비는
-           60px 를 그대로 물려받아 화면 맨 아래로 내려온다. 탭바와 같은 .25s ease 를
-           쓰므로 둘이 어긋나 보이지 않는다(스크롤을 올리면 탭바가 돌아오며 같이 복귀). */
-        .cv-sticky {
-          display: none;
-          position: fixed;
-          bottom: calc(60px + env(safe-area-inset-bottom));
-          left: 0; right: 0;
-          padding: 12px 16px;
-          background: rgba(250,246,240,0.94);
-          backdrop-filter: blur(14px);
-          border-top: 1px solid rgba(26,22,18,0.08);
-          z-index: 90;
-          transition: bottom .25s ease, padding-bottom .25s ease;
-        }
-        /* 탭바가 빠진 자리로 내려앉을 때는 홈 인디케이터 여백을 이쪽이 떠안는다 —
-           탭바가 갖고 있던 padding-bottom 이 같이 사라지기 때문이다.
-           body 는 :global 로 감싼다 — 안 감싸면 styled-jsx 가 body 에도 스코프 클래스를
-           붙여(body[...].jsx-xxx) 그 클래스가 없는 실제 body 와 영영 안 맞는다. */
-        :global(body[data-chrome-hidden="1"]) .cv-sticky {
-          bottom: 0;
-          padding-bottom: calc(12px + env(safe-area-inset-bottom));
-        }
-        .cv-btn-sticky { margin-top: 0; padding: 16px; box-shadow: 0 -4px 18px rgba(255,96,0,0.22); }
-
 
         /* ───── Responsive ───── */
         @media (max-width: 960px) {
@@ -3116,7 +3315,7 @@ export default function CvLanding() {
             margin-top: clamp(18px, 3vh, 30px);
             margin-bottom: -2%;
           }
-          .cv-hero-cta { margin-top: clamp(10px, 1.6vh, 20px); }
+          .cv-hero-cta { margin-top: clamp(24px, 3.4vh, 34px); }
           .cv-prize { min-height: 340px; }
           /* 1열로 떨어지면 이미지가 aspect-ratio:1/1 이라 카드 폭만큼 높이를 먹는다
              — 390px 화면에서 장당 420px(그중 이미지 350px), 세 장이면 1,404px 이라
@@ -3185,9 +3384,35 @@ export default function CvLanding() {
           .cv-jobs-grid { grid-template-columns: 1fr; }
         }
         @media (max-width: 600px) {
-          .cv-hero { padding: clamp(36px, 6vh, 56px) 20px clamp(28px, 4vh, 44px); }
+          /* 위에 이벤트 띠가 생겨 히어로 상단 여백이 겹쳐 보인다 — 절반으로 줄인다.
+             그리고 min-height:78vh + align-items:center 조합이 남는 높이를 위아래로
+             갈라 넣어서, 패딩을 줄여도 띠와 첫 글자 사이가 131px 떠 있었다. 히어로가
+             공고 카드 3장으로 채워져 이제 78vh 를 예약할 이유가 없다 — 내용 높이만
+             쓰고 위에서부터 쌓는다. */
+          /* 한 화면 안에서 히어로가 대부분을 채우고 폼 상단만 살짝 걸치게 잡는다.
+             헤더 52 + 띠 38 = 90px 을 빼고, 폼이 보일 자리로 150px 을 남긴다.
+             내용은 그 안에서 세로 중앙 — 위아래 여백이 같아야 한 덩어리로 읽힌다.
+             dvh 대신 vh 를 쓴다: 구형 안드로이드 웹뷰가 dvh 를 모른다. */
+          /* 위 여백에는 바닥값을 준다. align-items:center 만 믿으면 화면이 짧을 때
+             위아래가 같이 쪼그라들어(690px 화면에서 20px) 띠 바로 밑에 글자가 붙는다.
+             패딩으로 최소 여백을 깔고, 남는 높이만 중앙 정렬이 나눠 갖게 한다.
+             아래보다 위를 두껍게 둔다 — 위에는 헤더·띠가 이미 붙어 있어 답답해진다. */
+          .cv-hero {
+            padding: clamp(56px, 9vh, 96px) 20px clamp(28px, 4vh, 44px);
+            min-height: calc(100vh - 90px - 210px);
+            align-items: center;
+          }
+          /* 모바일 헤더는 fixed 52px — 띠를 그 아래에 붙이고, 헤더가 빠질 때 같이 뺀다. */
+          .cv-eventbar { top: 52px; }
+          :global(body[data-chrome-hidden="1"]) .cv-eventbar {
+            transform: translateY(calc(-100% - 52px));
+          }
           .cv-section-inner { padding: 0 20px; }
-          .cv-how, .cv-test, .cv-jobs, .cv-form-section { padding: 80px 0 64px; }
+          .cv-how, .cv-test, .cv-jobs { padding: 80px 0 64px; }
+          /* 폼이 히어로 바로 다음이라 상단 패딩 80px 은 첫 화면 하단을 흰 여백으로
+             채운다 — 실측에서 폼 제목이 801px 에 놓여 800px 접힘선에 정확히 잘렸다.
+             패딩을 줄여 제목이 접힘선 위로 올라오게 한다: 스크롤할 이유가 보인다. */
+          .cv-form-section { padding: 28px 0 64px; }
           /* 폼 카드 — 데스크톱 패딩(56/52px)·타이틀(42px) 그대로면 콘텐츠 폭이
              ~250pt로 구겨져 제목이 단어 중간에서 꺾인다. 모바일은 전부 축소. */
           .cv-form-wrap.cv-section-inner { padding: 0 12px; }
@@ -3215,7 +3440,9 @@ export default function CvLanding() {
             margin-bottom: -2%;
           }
           /* 앱 웹뷰는 하단 탭바(60px)에 가려 실제 가용 높이가 짧다 — 간격 최소로 */
-          .cv-hero-cta { margin-top: 10px; }
+          /* 600px 이하에서도 카드와 CTA 는 붙이지 않는다 — 붙으면 히어로 전체가
+             한 덩어리로 뭉쳐 보인다(바깥 여백이 120px 인데 안쪽만 10px). */
+          .cv-hero-cta { margin-top: clamp(22px, 3vh, 30px); }
           .cv-hero-note { margin-top: 12px; font-size: 11.5px; }
           .cv-h2 { letter-spacing: -0.8px; }
           .cv-success-card {
@@ -3279,7 +3506,6 @@ export default function CvLanding() {
           }
           .cv-test-card { flex-basis: 290px; padding: 26px 22px 20px; }
           .cv-jobs-grid { padding: 0 20px; }
-          .cv-sticky { display: block; }
           /* 히어로 CTA 는 모바일에서도 화면 폭을 다 먹지 않고 글자 폭에 맞춘다 —
              풀폭이면 하단 스티키 바와 구분이 안 되고 가로로 늘어져 보인다. */
           .cv-btn.cv-btn-hero { width: auto; max-width: 86%; padding: 16px 44px; font-size: 15px; }

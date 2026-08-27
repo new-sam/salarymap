@@ -163,8 +163,9 @@ html {
 
 /* Nav stickiness policy:
    - App pages (default): GlobalNav is sticky (set inside the component itself)
-   - Ad-landing routes (/cv, /promo/*): GlobalNav becomes static so it scrolls
-     out with the hero, removing distraction from the conversion message. */
+   - /promo/*: GlobalNav becomes static so it scrolls out with the hero.
+   /cv 는 2026-08-27 에 기본(sticky)으로 되돌렸다 — 하단 탭바가 스크롤 업에 돌아오는데
+   헤더만 안 돌아와 고장으로 보였고, 탭바 자체가 이탈 경로라 헤더만 막을 이유가 없다. */
 body[data-ad-landing="1"] .gnav { position: relative !important; z-index: 200; }
 
 * {
