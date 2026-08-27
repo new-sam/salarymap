@@ -1241,6 +1241,42 @@ export const COLDMAIL_TEMPLATES = [
     }),
   },
   {
+    match: /^gasdna-.*-private/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử — Kỹ sư Firmware & Thiết kế Mạch điện tử (làm việc tại Hàn Quốc) tại GasDNA',
+      ko: '[FYI] 추천 후보 명단에 선정되셨습니다 — GasDNA 펌웨어·회로설계 엔지니어 (한국 근무)',
+      en: "[FYI] You've been nominated — Firmware & Circuit Design Engineer (work in Korea) at GasDNA",
+    },
+    desc: '가스디엔에이 추천 (8/27): 비공개 프레임 — 한국행 E-7 펌웨어·회로, 룰 스캔 E-7(1y+/석사)×임베디드 16명(A5/B5/C6).',
+    source: 'scripts/outreach/gasdna-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '<b>GasDNA</b> — nhà sản xuất máy dò khí hàng đầu Hàn Quốc (Incheon, ISO/CE/ATEX, xuất khẩu 20+ quốc gia) — đang tuyển kỹ sư firmware &amp; mạch điện tử làm việc tại Hàn Quốc (visa E-7) qua FYI. Không yêu cầu tiếng Hàn. Đội ngũ FYI đã xem xét toàn bộ hồ sơ và <b>chọn bạn vào danh sách đề cử</b>.',
+        ko: '한국의 가스검지기 전문 제조사 <b>가스디엔에이(GasDNA)</b>가 FYI를 통해 한국 근무(E-7) 펌웨어·회로설계 엔지니어를 채용 중입니다. 한국어 요건은 없습니다. FYI 팀이 이력서 전체를 검토해 회원님을 <b>추천 명단에 선정</b>했습니다.',
+        en: "<b>GasDNA</b> — Korea's leading gas detector manufacturer (Incheon, ISO/CE/ATEX, exporting to 20+ countries) — is hiring a firmware & circuit design engineer to work in Korea (E-7 visa) via FYI. The FYI team reviewed all profiles and <b>nominated you</b>.",
+      },
+      initial: 'G', company: 'GasDNA', title: 'Kỹ sư Firmware & Thiết kế Mạch điện tử', meta: '45–48 triệu ₫/tháng · Hàn Quốc (E-7)', tail: BENEFIT_PRIVATE,
+    }),
+  },
+  {
+    match: /^gasdna-/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử gửi GasDNA — Kỹ sư Firmware & Thiết kế Mạch điện tử (làm việc tại Hàn Quốc)',
+      ko: '[FYI] GasDNA 추천 명단에 선정되셨습니다 — 펌웨어·회로설계 엔지니어 (한국 근무)',
+      en: "[FYI] You've been nominated to GasDNA — Firmware & Circuit Design Engineer (work in Korea)",
+    },
+    desc: '가스디엔에이 추천 (8/27): 공개 프레임 — FYI 검토 선정·명단에 프로필 동봉·지원 시 우선 검토.',
+    source: 'scripts/outreach/gasdna-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '<b>GasDNA</b> — nhà sản xuất máy dò khí hàng đầu Hàn Quốc (Incheon, ISO/CE/ATEX, xuất khẩu 20+ quốc gia) — đang tuyển kỹ sư firmware &amp; mạch điện tử làm việc tại Hàn Quốc (visa E-7) qua FYI. Không yêu cầu tiếng Hàn. Đội ngũ FYI đã xem xét toàn bộ hồ sơ và <b>chọn bạn vào danh sách đề cử</b> — hồ sơ công khai của bạn sẽ được gửi kèm danh sách cho nhà tuyển dụng trong tuần này.',
+        ko: '한국의 가스검지기 전문 제조사 <b>가스디엔에이(GasDNA)</b>가 FYI를 통해 한국 근무(E-7) 펌웨어·회로설계 엔지니어를 채용 중입니다. FYI 팀이 이력서 전체를 검토해 회원님을 <b>추천 명단에 선정</b>했으며, 공개 프로필은 이번 주 명단과 함께 담당자에게 전달됩니다.',
+        en: "<b>GasDNA</b> — Korea's leading gas detector manufacturer (Incheon, ISO/CE/ATEX, exporting to 20+ countries) — is hiring a firmware & circuit design engineer to work in Korea (E-7 visa) via FYI. The FYI team reviewed all profiles and <b>nominated you</b>; your public profile goes to the recruiter with this week's list.",
+      },
+      initial: 'G', company: 'GasDNA', title: 'Kỹ sư Firmware & Thiết kế Mạch điện tử', meta: '45–48 triệu ₫/tháng · Hàn Quốc (E-7)', tail: BENEFIT_PUBLIC,
+    }),
+  },
+  {
     match: /^rothea-.*-private/,
     subject: {
       vi: '[FYI] Bạn được chọn vào danh sách đề cử — Performance Marketer — Amazon US E-commerce tại Rothea',
