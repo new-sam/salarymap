@@ -1241,6 +1241,78 @@ export const COLDMAIL_TEMPLATES = [
     }),
   },
   {
+    match: /^exporum-.*-private/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử — {{포지션}} tại EXPORUM Vietnam',
+      ko: '[FYI] 추천 후보 명단에 선정되셨습니다 — EXPORUM Vietnam {{포지션}}',
+      en: "[FYI] You've been nominated — {{position}} at EXPORUM Vietnam",
+    },
+    desc: '엑스포럼 추천 (8/28): 비공개 프레임 — Cafe Show Vietnam 주최사 인턴 2공고(V23 마케팅/V24 프로젝트), 주니어(0-2y)×HCMC권 룰 선정. 2그룹(mkt/prj).',
+    source: 'scripts/outreach/exporum-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '<b>EXPORUM Vietnam</b> — đơn vị tổ chức triển lãm quốc tế đến từ Hàn Quốc, chủ trì <b>Cafe Show Vietnam</b> — đang tuyển thực tập sinh (3 tháng, Quận 1, TP.HCM) qua FYI. Không yêu cầu kinh nghiệm. Đội ngũ FYI đã xem xét toàn bộ hồ sơ và <b>chọn bạn vào danh sách đề cử</b>.',
+        ko: 'Cafe Show Vietnam을 주최하는 한국계 국제 전시 기업 <b>EXPORUM Vietnam</b>이 FYI를 통해 인턴(3개월, 호치민 1군)을 채용 중입니다. 경력 무관. FYI 팀이 이력서 전체를 검토해 회원님을 <b>추천 명단에 선정</b>했습니다.',
+        en: '<b>EXPORUM Vietnam</b> — the Korean international exhibition organizer behind <b>Cafe Show Vietnam</b> — is hiring interns (3 months, District 1, HCMC) via FYI. The FYI team reviewed all profiles and <b>nominated you</b>.',
+      },
+      initial: 'E', company: 'EXPORUM Vietnam', title: '{{공고 제목}}', meta: 'Thực tập 3 tháng · Quận 1, TP.HCM · Onsite', tail: BENEFIT_PRIVATE,
+    }),
+  },
+  {
+    match: /^exporum-/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử gửi EXPORUM Vietnam — {{포지션}}',
+      ko: '[FYI] EXPORUM Vietnam 추천 명단에 선정되셨습니다 — {{포지션}}',
+      en: "[FYI] You've been nominated to EXPORUM Vietnam — {{position}}",
+    },
+    desc: '엑스포럼 추천 (8/28): 공개 프레임 — FYI 검토 선정·명단에 프로필 동봉·지원 시 우선 검토. 2그룹(mkt/prj).',
+    source: 'scripts/outreach/exporum-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '<b>EXPORUM Vietnam</b> — đơn vị tổ chức triển lãm quốc tế đến từ Hàn Quốc, chủ trì <b>Cafe Show Vietnam</b> — đang tuyển thực tập sinh (3 tháng, Quận 1, TP.HCM) qua FYI. Đội ngũ FYI đã xem xét toàn bộ hồ sơ và <b>chọn bạn vào danh sách đề cử</b> — hồ sơ công khai của bạn sẽ được gửi kèm danh sách cho nhà tuyển dụng trong tuần này.',
+        ko: 'Cafe Show Vietnam을 주최하는 한국계 국제 전시 기업 <b>EXPORUM Vietnam</b>이 FYI를 통해 인턴(3개월, 호치민 1군)을 채용 중입니다. FYI 팀이 이력서 전체를 검토해 회원님을 <b>추천 명단에 선정</b>했으며, 공개 프로필은 이번 주 명단과 함께 담당자에게 전달됩니다.',
+        en: '<b>EXPORUM Vietnam</b> — the Korean international exhibition organizer behind <b>Cafe Show Vietnam</b> — is hiring interns (3 months, District 1, HCMC) via FYI. The FYI team reviewed all profiles and <b>nominated you</b>; your public profile goes to the recruiter with this week\'s list.',
+      },
+      initial: 'E', company: 'EXPORUM Vietnam', title: '{{공고 제목}}', meta: 'Thực tập 3 tháng · Quận 1, TP.HCM · Onsite', tail: BENEFIT_PUBLIC,
+    }),
+  },
+  {
+    match: /^megazone-.*-private/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử — {{포지션}} tại MEGAZONE Vietnam',
+      ko: '[FYI] 추천 후보 명단에 선정되셨습니다 — MEGAZONE Vietnam {{포지션}}',
+      en: "[FYI] You've been nominated — {{position}} at MEGAZONE Vietnam",
+    },
+    desc: '메가존 추천 (8/28): 비공개 프레임 — 한국계 클라우드 MSP(AWS) 3공고(V25 AM/V26 CSA/V27 Pre-sales), 30-39M ₫, 하노이·호치민 룰 선정. 3그룹(am/csa/pse).',
+    source: 'scripts/outreach/megazone-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '<b>MEGAZONE Vietnam</b> — thành viên của MEGAZONE CLOUD, nhà cung cấp dịch vụ quản lý đám mây (MSP) hàng đầu Hàn Quốc và đối tác cấp cao của AWS — đang tuyển dụng các vị trí chủ chốt tại Việt Nam qua FYI. Đội ngũ FYI đã xem xét toàn bộ hồ sơ và <b>chọn bạn vào danh sách đề cử</b>.',
+        ko: '한국 1위 클라우드 MSP <b>메가존클라우드</b>의 베트남 법인 <b>MEGAZONE Vietnam</b>이 FYI를 통해 주요 포지션(AWS)을 채용 중입니다. FYI 팀이 이력서 전체를 검토해 회원님을 <b>추천 명단에 선정</b>했습니다.',
+        en: "<b>MEGAZONE Vietnam</b> — part of MEGAZONE CLOUD, Korea's leading cloud MSP and premier AWS partner — is hiring key positions in Vietnam via FYI. The FYI team reviewed all profiles and <b>nominated you</b>.",
+      },
+      initial: 'M', company: 'MEGAZONE Vietnam', title: '{{공고 제목}}', meta: '30–39 triệu ₫/tháng · {{지역}} · Onsite', tail: BENEFIT_PRIVATE,
+    }),
+  },
+  {
+    match: /^megazone-/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử gửi MEGAZONE Vietnam — {{포지션}}',
+      ko: '[FYI] MEGAZONE Vietnam 추천 명단에 선정되셨습니다 — {{포지션}}',
+      en: "[FYI] You've been nominated to MEGAZONE Vietnam — {{position}}",
+    },
+    desc: '메가존 추천 (8/28): 공개 프레임 — FYI 검토 선정·명단에 프로필 동봉·지원 시 우선 검토. 3그룹(am/csa/pse).',
+    source: 'scripts/outreach/megazone-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '<b>MEGAZONE Vietnam</b> — thành viên của MEGAZONE CLOUD, nhà cung cấp dịch vụ quản lý đám mây (MSP) hàng đầu Hàn Quốc và đối tác cấp cao của AWS — đang tuyển dụng các vị trí chủ chốt tại Việt Nam qua FYI. Đội ngũ FYI đã xem xét toàn bộ hồ sơ và <b>chọn bạn vào danh sách đề cử</b> — hồ sơ công khai của bạn sẽ được gửi kèm danh sách cho nhà tuyển dụng trong tuần này.',
+        ko: '한국 1위 클라우드 MSP <b>메가존클라우드</b>의 베트남 법인 <b>MEGAZONE Vietnam</b>이 FYI를 통해 주요 포지션(AWS)을 채용 중입니다. FYI 팀이 이력서 전체를 검토해 회원님을 <b>추천 명단에 선정</b>했으며, 공개 프로필은 이번 주 명단과 함께 담당자에게 전달됩니다.',
+        en: "<b>MEGAZONE Vietnam</b> — part of MEGAZONE CLOUD, Korea's leading cloud MSP and premier AWS partner — is hiring key positions in Vietnam via FYI. The FYI team reviewed all profiles and <b>nominated you</b>; your public profile goes to the recruiter with this week's list.",
+      },
+      initial: 'M', company: 'MEGAZONE Vietnam', title: '{{공고 제목}}', meta: '30–39 triệu ₫/tháng · {{지역}} · Onsite', tail: BENEFIT_PUBLIC,
+    }),
+  },
+  {
     match: /^atop-.*-private/,
     subject: {
       vi: '[FYI] Bạn được chọn vào danh sách đề cử — Thực tập sinh tiếng Hàn – Dịch thuật & Hành chính văn phòng tại Atop Study Cafe',
