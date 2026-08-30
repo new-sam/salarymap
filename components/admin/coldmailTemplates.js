@@ -1241,6 +1241,42 @@ export const COLDMAIL_TEMPLATES = [
     }),
   },
   {
+    match: /^overlay-.*-private/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử — {{포지션}} tại Overlay',
+      ko: '[FYI] 추천 후보 명단에 선정되셨습니다 — Overlay {{포지션}}',
+      en: "[FYI] You've been nominated — {{position}} at Overlay",
+    },
+    desc: '오버레이 추천 (8/30): 비공개 프레임 — VTYLE(VRChat 아바타 패션) 3D 아티스트 2공고(R143 의상/R144 리거), 원격·경력무관, 3D툴 룰 선정. 2그룹(cloth/rig).',
+    source: 'scripts/outreach/overlay-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '<b>Overlay</b> — công ty Hàn Quốc vận hành <b>VTYLE</b>, nền tảng thời trang cho avatar 3D trên VRChat — đang tuyển 3D Artist qua FYI. Không yêu cầu kinh nghiệm, làm việc từ xa 100%. Đội ngũ FYI đã xem xét toàn bộ hồ sơ và <b>chọn bạn vào danh sách đề cử</b>.',
+        ko: 'VRChat 아바타 패션 플랫폼 <b>VTYLE</b>을 운영하는 한국 기업 <b>Overlay</b>가 FYI를 통해 3D 아티스트를 채용 중입니다. 경력 무관·100% 원격. FYI 팀이 이력서 전체를 검토해 회원님을 <b>추천 명단에 선정</b>했습니다.',
+        en: '<b>Overlay</b> — the Korean company behind <b>VTYLE</b>, a fashion platform for 3D avatars on VRChat — is hiring 3D artists via FYI. No experience required, 100% remote. The FYI team reviewed all profiles and <b>nominated you</b>.',
+      },
+      initial: 'O', company: 'Overlay (VTYLE)', title: '{{공고 제목}}', meta: 'Remote 100% · TT 4–5tr / Junior 10–12tr ₫', tail: BENEFIT_PRIVATE,
+    }),
+  },
+  {
+    match: /^overlay-/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử gửi Overlay — {{포지션}}',
+      ko: '[FYI] Overlay 추천 명단에 선정되셨습니다 — {{포지션}}',
+      en: "[FYI] You've been nominated to Overlay — {{position}}",
+    },
+    desc: '오버레이 추천 (8/30): 공개 프레임 — FYI 검토 선정·명단에 프로필 동봉·지원 시 우선 검토. 2그룹(cloth/rig).',
+    source: 'scripts/outreach/overlay-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '<b>Overlay</b> — công ty Hàn Quốc vận hành <b>VTYLE</b>, nền tảng thời trang cho avatar 3D trên VRChat — đang tuyển 3D Artist qua FYI. Không yêu cầu kinh nghiệm, làm việc từ xa 100%. Đội ngũ FYI đã xem xét toàn bộ hồ sơ và <b>chọn bạn vào danh sách đề cử</b> — hồ sơ công khai của bạn sẽ được gửi kèm danh sách cho nhà tuyển dụng trong tuần này.',
+        ko: 'VRChat 아바타 패션 플랫폼 <b>VTYLE</b>을 운영하는 한국 기업 <b>Overlay</b>가 FYI를 통해 3D 아티스트를 채용 중입니다. FYI 팀이 이력서 전체를 검토해 회원님을 <b>추천 명단에 선정</b>했으며, 공개 프로필은 이번 주 명단과 함께 담당자에게 전달됩니다.',
+        en: '<b>Overlay</b> — the Korean company behind <b>VTYLE</b>, a fashion platform for 3D avatars on VRChat — is hiring 3D artists via FYI. The FYI team reviewed all profiles and <b>nominated you</b>; your public profile goes to the recruiter with this week\'s list.',
+      },
+      initial: 'O', company: 'Overlay (VTYLE)', title: '{{공고 제목}}', meta: 'Remote 100% · TT 4–5tr / Junior 10–12tr ₫', tail: BENEFIT_PUBLIC,
+    }),
+  },
+  {
     match: /^exporum-.*-private/,
     subject: {
       vi: '[FYI] Bạn được chọn vào danh sách đề cử — {{포지션}} tại EXPORUM Vietnam',
