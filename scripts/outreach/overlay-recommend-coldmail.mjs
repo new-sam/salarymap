@@ -34,7 +34,7 @@ const roles = (p) => [p.position, ...(p.desired_roles || [])].filter(Boolean)
 const hard3d = (p) => /blender|zbrush|substance|\bmaya\b|3ds max|cinema 4d/.test(txt(p))
 // ⚠️ \b 필수: /unity/는 "community", /rigger/는 "ScrollTrigger"에 걸린다.
 // \b로도 부족: "Unity Ads"(광고), "UNITY Fitness"(사명), ASP.NET Unity(DI) — 게임 문맥(c#/game/3d) 동반 필수.
-const engine = (p) => /\bunity\b|\bunreal\b/.test(txt(p)) && /\bgame|\bc#\b|\b3d\b|blender|vrchat/.test(txt(p)) && !/unity (ads|fitness)/.test(txt(p))
+const engine = (p) => /\bunity\b|\bunreal\b/.test(txt(p)) && /\bgame|\bc#|\b3d\b|blender|vrchat/.test(txt(p)) && !/unity (ads|fitness)/.test(txt(p))
 const soft3d = (p) => /\b3d model|3d art|3d design|game art|character (model|design)/.test(txt(p)) || engine(p)
 const gameish = (p) => roles(p).includes('Game') || engine(p)
 const eligible = (p) => {
