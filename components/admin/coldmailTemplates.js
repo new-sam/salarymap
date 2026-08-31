@@ -1241,6 +1241,114 @@ export const COLDMAIL_TEMPLATES = [
     }),
   },
   {
+    match: /^fmc-.*-private/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử — {{포지션}} tại First Marketing Company',
+      ko: '[FYI] 추천 후보 명단에 선정되셨습니다 — First Marketing Company {{포지션}}',
+      en: "[FYI] You've been nominated — {{position}} at First Marketing Company",
+    },
+    desc: 'FMC 추천 (8/31): 비공개 프레임 — 한국계 디지털 마케팅 에이전시 5공고(AE/KOL부킹/마케팅/HR/세일즈리더), HCMC 온사이트, 직군×연차 룰 선정. 5그룹(ae/kol/mkt/hr/lead).',
+    source: 'scripts/outreach/fmc-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '<b>First Marketing Company</b> — doanh nghiệp Hàn Quốc trong lĩnh vực Digital Marketing, Influencer Marketing và Brand Communication — đang tuyển nhiều vị trí qua FYI (làm việc tại Q. Bình Thạnh, TP.HCM). Đội ngũ FYI đã xem xét toàn bộ hồ sơ và <b>chọn bạn vào danh sách đề cử</b> cho vị trí phù hợp nhất với kinh nghiệm của bạn.',
+        ko: '디지털 마케팅·인플루언서 마케팅 한국 기업 <b>First Marketing Company</b>가 FYI를 통해 다수 포지션을 채용 중입니다(호치민 빈탄군 온사이트). FYI 팀이 이력서 전체를 검토해 회원님을 <b>추천 명단에 선정</b>했습니다.',
+        en: '<b>First Marketing Company</b> — a Korean agency in digital & influencer marketing — is hiring multiple roles via FYI (onsite, Binh Thanh, HCMC). The FYI team reviewed all profiles and <b>nominated you</b> for the best-fit role.',
+      },
+      initial: 'F', company: 'First Marketing Company', title: '{{공고 제목}}', meta: 'Onsite · Nguyễn Hữu Cảnh, TP.HCM', tail: BENEFIT_PRIVATE,
+    }),
+  },
+  {
+    match: /^fmc-/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử gửi First Marketing Company — {{포지션}}',
+      ko: '[FYI] First Marketing Company 추천 명단에 선정되셨습니다 — {{포지션}}',
+      en: "[FYI] You've been nominated to First Marketing Company — {{position}}",
+    },
+    desc: 'FMC 추천 (8/31): 공개 프레임 — FYI 검토 선정·명단에 프로필 동봉·지원 시 우선 검토. 5그룹(ae/kol/mkt/hr/lead).',
+    source: 'scripts/outreach/fmc-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '<b>First Marketing Company</b> — doanh nghiệp Hàn Quốc trong lĩnh vực Digital Marketing, Influencer Marketing và Brand Communication — đang tuyển nhiều vị trí qua FYI (làm việc tại Q. Bình Thạnh, TP.HCM). Đội ngũ FYI đã xem xét toàn bộ hồ sơ và <b>chọn bạn vào danh sách đề cử</b> — hồ sơ công khai của bạn sẽ được gửi kèm danh sách cho nhà tuyển dụng trong tuần này.',
+        ko: '디지털 마케팅·인플루언서 마케팅 한국 기업 <b>First Marketing Company</b>가 FYI를 통해 다수 포지션을 채용 중입니다. FYI 팀이 이력서 전체를 검토해 회원님을 <b>추천 명단에 선정</b>했으며, 공개 프로필은 이번 주 명단과 함께 담당자에게 전달됩니다.',
+        en: '<b>First Marketing Company</b> — a Korean agency in digital & influencer marketing — is hiring via FYI. The FYI team reviewed all profiles and <b>nominated you</b>; your public profile goes to the recruiter with this week\'s list.',
+      },
+      initial: 'F', company: 'First Marketing Company', title: '{{공고 제목}}', meta: 'Onsite · Nguyễn Hữu Cảnh, TP.HCM', tail: BENEFIT_PUBLIC,
+    }),
+  },
+  {
+    match: /^nexon-.*-private/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử — Unity Game Developer (C#) tại NEXON DEV VINA',
+      ko: '[FYI] 추천 후보 명단에 선정되셨습니다 — NEXON DEV VINA Unity 게임 개발자',
+      en: "[FYI] You've been nominated — Unity Game Developer (C#) at NEXON DEV VINA",
+    },
+    desc: '넥슨데브비나 추천 (8/31): 비공개 프레임 — Unity 게임 개발자(C#) 1공고, HCMC 온사이트, Game 직군·Unity 신호 룰 선정(영문 CV 필수 안내 포함). 1그룹(unity).',
+    source: 'scripts/outreach/nexon-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '<b>NEXON DEV VINA</b> — studio phát triển game thuộc NEXON, làm việc trên các dự án game toàn cầu — đang tuyển <b>Unity Game Developer (C#)</b> qua FYI (UOA Tower, TP.HCM). Đội ngũ FYI đã xem xét toàn bộ hồ sơ và <b>chọn bạn vào danh sách đề cử</b>. Lưu ý: công ty chỉ nhận <b>CV bằng tiếng Anh</b>.',
+        ko: 'NEXON 산하 게임 개발 스튜디오 <b>NEXON DEV VINA</b>가 FYI를 통해 <b>Unity 게임 개발자(C#)</b>를 채용 중입니다(호치민 UOA Tower). FYI 팀이 이력서 전체를 검토해 회원님을 <b>추천 명단에 선정</b>했습니다. 영문 CV만 접수됩니다.',
+        en: '<b>NEXON DEV VINA</b> — a NEXON game studio working on global titles — is hiring a <b>Unity Game Developer (C#)</b> via FYI (UOA Tower, HCMC). The FYI team reviewed all profiles and <b>nominated you</b>. Note: English CVs only.',
+      },
+      initial: 'N', company: 'NEXON DEV VINA', title: 'Unity Game Developer (C#)', meta: 'Onsite · UOA Tower, TP.HCM · CV tiếng Anh', tail: BENEFIT_PRIVATE,
+    }),
+  },
+  {
+    match: /^nexon-/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử gửi NEXON DEV VINA — Unity Game Developer (C#)',
+      ko: '[FYI] NEXON DEV VINA 추천 명단에 선정되셨습니다 — Unity 게임 개발자',
+      en: "[FYI] You've been nominated to NEXON DEV VINA — Unity Game Developer (C#)",
+    },
+    desc: '넥슨데브비나 추천 (8/31): 공개 프레임 — FYI 검토 선정·명단에 프로필 동봉·지원 시 우선 검토. 1그룹(unity).',
+    source: 'scripts/outreach/nexon-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '<b>NEXON DEV VINA</b> — studio phát triển game thuộc NEXON, làm việc trên các dự án game toàn cầu — đang tuyển <b>Unity Game Developer (C#)</b> qua FYI (UOA Tower, TP.HCM). Đội ngũ FYI đã xem xét toàn bộ hồ sơ và <b>chọn bạn vào danh sách đề cử</b> — hồ sơ công khai của bạn sẽ được gửi kèm danh sách cho nhà tuyển dụng trong tuần này. Lưu ý: công ty chỉ nhận <b>CV bằng tiếng Anh</b>.',
+        ko: 'NEXON 산하 게임 개발 스튜디오 <b>NEXON DEV VINA</b>가 FYI를 통해 <b>Unity 게임 개발자(C#)</b>를 채용 중입니다. FYI 팀이 이력서 전체를 검토해 회원님을 <b>추천 명단에 선정</b>했으며, 공개 프로필은 이번 주 명단과 함께 담당자에게 전달됩니다. 영문 CV만 접수됩니다.',
+        en: '<b>NEXON DEV VINA</b> — a NEXON game studio working on global titles — is hiring a <b>Unity Game Developer (C#)</b> via FYI. The FYI team reviewed all profiles and <b>nominated you</b>; your public profile goes to the recruiter with this week\'s list. Note: English CVs only.',
+      },
+      initial: 'N', company: 'NEXON DEV VINA', title: 'Unity Game Developer (C#)', meta: 'Onsite · UOA Tower, TP.HCM · CV tiếng Anh', tail: BENEFIT_PUBLIC,
+    }),
+  },
+  {
+    match: /^daehong-.*-private/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử — Art Director tại DAEHONG COMMUNICATIONS VIETNAM',
+      ko: '[FYI] 추천 후보 명단에 선정되셨습니다 — DAEHONG COMMUNICATIONS VIETNAM Art Director',
+      en: "[FYI] You've been nominated — Art Director at DAEHONG COMMUNICATIONS VIETNAM",
+    },
+    desc: '대홍커뮤니케이션즈 추천 (8/31): 비공개 프레임 — Art Director 1공고(시니어 크리에이티브·포트폴리오 필수), HCMC 온사이트, Design×5y+ 룰 선정. 1그룹(ad).',
+    source: 'scripts/outreach/daehong-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '<b>DAEHONG COMMUNICATIONS VIETNAM</b> — công ty quảng cáo & truyền thông tích hợp thuộc tập đoàn Hàn Quốc — đang tuyển <b>Art Director</b> (Creative Solutions Team) qua FYI, làm việc tại Diamond Plaza, TP.HCM. Đội ngũ FYI đã xem xét toàn bộ hồ sơ và <b>chọn bạn vào danh sách đề cử</b>. Vị trí dành cho creative giàu kinh nghiệm; hồ sơ cần kèm <b>Portfolio</b> và tiếng Anh tốt.',
+        ko: '한국계 종합 광고·커뮤니케이션 기업 <b>DAEHONG COMMUNICATIONS VIETNAM</b>이 FYI를 통해 <b>Art Director</b>를 채용 중입니다(호치민 Diamond Plaza). FYI 팀이 이력서 전체를 검토해 회원님을 <b>추천 명단에 선정</b>했습니다. 시니어 크리에이티브 대상·포트폴리오 필수.',
+        en: '<b>DAEHONG COMMUNICATIONS VIETNAM</b> — a Korean integrated advertising & communications company — is hiring an <b>Art Director</b> via FYI (Diamond Plaza, HCMC). The FYI team reviewed all profiles and <b>nominated you</b>. Senior creatives; portfolio required.',
+      },
+      initial: 'D', company: 'DAEHONG COMMUNICATIONS VIETNAM', title: 'Art Director', meta: 'Onsite · Diamond Plaza, TP.HCM · Portfolio', tail: BENEFIT_PRIVATE,
+    }),
+  },
+  {
+    match: /^daehong-/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử gửi DAEHONG COMMUNICATIONS VIETNAM — Art Director',
+      ko: '[FYI] DAEHONG COMMUNICATIONS VIETNAM 추천 명단에 선정되셨습니다 — Art Director',
+      en: "[FYI] You've been nominated to DAEHONG COMMUNICATIONS VIETNAM — Art Director",
+    },
+    desc: '대홍커뮤니케이션즈 추천 (8/31): 공개 프레임 — FYI 검토 선정·명단에 프로필 동봉·지원 시 우선 검토. 1그룹(ad).',
+    source: 'scripts/outreach/daehong-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '<b>DAEHONG COMMUNICATIONS VIETNAM</b> — công ty quảng cáo & truyền thông tích hợp thuộc tập đoàn Hàn Quốc — đang tuyển <b>Art Director</b> (Creative Solutions Team) qua FYI, làm việc tại Diamond Plaza, TP.HCM. Đội ngũ FYI đã xem xét toàn bộ hồ sơ và <b>chọn bạn vào danh sách đề cử</b> — hồ sơ công khai của bạn sẽ được gửi kèm danh sách cho nhà tuyển dụng trong tuần này. Hồ sơ cần kèm <b>Portfolio</b> và tiếng Anh tốt.',
+        ko: '한국계 종합 광고·커뮤니케이션 기업 <b>DAEHONG COMMUNICATIONS VIETNAM</b>이 FYI를 통해 <b>Art Director</b>를 채용 중입니다. FYI 팀이 이력서 전체를 검토해 회원님을 <b>추천 명단에 선정</b>했으며, 공개 프로필은 이번 주 명단과 함께 담당자에게 전달됩니다. 포트폴리오 필수.',
+        en: '<b>DAEHONG COMMUNICATIONS VIETNAM</b> — a Korean integrated advertising & communications company — is hiring an <b>Art Director</b> via FYI. The FYI team reviewed all profiles and <b>nominated you</b>; your public profile goes to the recruiter with this week\'s list. Portfolio required.',
+      },
+      initial: 'D', company: 'DAEHONG COMMUNICATIONS VIETNAM', title: 'Art Director', meta: 'Onsite · Diamond Plaza, TP.HCM · Portfolio', tail: BENEFIT_PUBLIC,
+    }),
+  },
+  {
     match: /^overlay-.*-private/,
     subject: {
       vi: '[FYI] Bạn được chọn vào danh sách đề cử — {{포지션}} tại Overlay',
