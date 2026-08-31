@@ -5,7 +5,7 @@
 -- (public read jobs / public_read_jobs / admin_manage_jobs)이 남아 있어 비활성 1,108건
 -- (draft 포함, raw_payload·created_by 노출)이 anon 키로 개별 조회됐다. permissive 정책은
 -- OR 로 합쳐지므로 전부 걷어내야 잠긴다.
--- admin_manage_jobs(ALL, public)는 참조하는 코드가 0건 — 어드민은 전부 /api/admin/*
+-- admin_manage_jobs(ALL, public)는 참조하는 코드가 0건 — 어드민은 전부 /api/admin/* ㅠ
 -- (service role, RLS 우회) 경유라 드랍해도 안전하고, 남기면 anon 쓰기 구멍이 될 수 있다.
 --
 -- 공개 피드(/api/jobs)·상세 SSR(jobs/[id])·sitemap·크롤러·모바일 앱(/api/jobs 경유)은
