@@ -1277,6 +1277,150 @@ export const COLDMAIL_TEMPLATES = [
     }),
   },
   {
+    match: /^qnt-recommend1-.*-private/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử — {{포지션}} tại QNT',
+      ko: '[FYI] 추천 후보 명단에 선정되셨습니다 — QNT {{포지션}}',
+      en: "[FYI] You've been nominated — {{position}} at QNT",
+    },
+    desc: 'QNT 추천 (9/4): 비공개 프레임 — 다낭 공장 준비 단계 한국계 제조사, 통역·한국어 비서(interp)/인사(hr) 2공고, 다낭 거주 룰 선정(풀 각 7명·1명 실측).',
+    source: 'scripts/outreach/ktc0904b-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '<b>QNT</b> — doanh nghiệp sản xuất với Ban giám đốc người Hàn, đang trong giai đoạn chuẩn bị vận hành nhà máy tại Đà Nẵng — đang tuyển nhân sự văn phòng qua FYI, làm việc tại nhà máy (Phú Ninh, Đà Nẵng).',
+        ko: '한국인 경영진의 제조 기업 <b>QNT</b>가 다낭 공장 가동을 준비하며 FYI를 통해 사무직을 채용 중입니다(다낭 푸닌 공장 근무).',
+        en: '<b>QNT</b> — a manufacturer with Korean management preparing to operate its Đà Nẵng factory — is hiring office staff via FYI (Phú Ninh, Đà Nẵng).',
+      },
+      initial: 'Q', company: 'QNT', title: '{{공고 제목}}', meta: 'Onsite · Nhà máy, Đà Nẵng', tail: BENEFIT_PRIVATE,
+    }),
+  },
+  {
+    match: /^qnt-recommend1-/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử gửi QNT — {{포지션}}',
+      ko: '[FYI] QNT 추천 명단에 선정되셨습니다 — {{포지션}}',
+      en: "[FYI] You've been nominated to QNT — {{position}}",
+    },
+    desc: 'QNT 추천 (9/4): 공개 프레임 — FYI 검토 선정·명단에 프로필 동봉·지원 시 우선 검토. 2그룹(interp/hr).',
+    source: 'scripts/outreach/ktc0904b-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '<b>QNT</b> — doanh nghiệp sản xuất với Ban giám đốc người Hàn, đang trong giai đoạn chuẩn bị vận hành nhà máy tại Đà Nẵng — đang tuyển nhân sự văn phòng qua FYI. Đội ngũ FYI đã xem xét toàn bộ hồ sơ và <b>chọn bạn vào danh sách đề cử</b> — hồ sơ công khai của bạn sẽ được gửi kèm danh sách cho nhà tuyển dụng trong tuần này.',
+        ko: '한국인 경영진의 제조 기업 <b>QNT</b>가 다낭 공장 가동을 준비하며 FYI를 통해 사무직을 채용 중입니다. FYI 팀이 이력서 전체를 검토해 회원님을 <b>추천 명단에 선정</b>했으며, 공개 프로필은 이번 주 명단과 함께 담당자에게 전달됩니다.',
+        en: '<b>QNT</b> — a manufacturer with Korean management preparing its Đà Nẵng factory — is hiring via FYI. The FYI team reviewed all profiles and <b>nominated you</b>; your public profile goes to the recruiter with this week\'s list.',
+      },
+      initial: 'Q', company: 'QNT', title: '{{공고 제목}}', meta: 'Onsite · Nhà máy, Đà Nẵng', tail: BENEFIT_PUBLIC,
+    }),
+  },
+  {
+    match: /^sktax-recommend1-.*-private/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử — Kế toán dịch vụ tại SKtax',
+      ko: '[FYI] 추천 후보 명단에 선정되셨습니다 — SKtax 회계 담당자',
+      en: "[FYI] You've been nominated — Service Accountant at SKtax",
+    },
+    desc: 'SKtax 회계 추천 (9/4): 비공개 프레임 — 회계·세무 서비스사, HCMC An Phú 온사이트 13–15tr, Finance×1y+ 룰 선정. 9/4 당일은 1차 회계 수신자 전원 제외로 0명 — 간격 후 재실행 시 흡수.',
+    source: 'scripts/outreach/ktc0904b-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '<b>SKtax</b> — công ty dịch vụ kế toán – thuế — đang tuyển <b>Kế toán dịch vụ</b> qua FYI, làm việc tại An Phú, TP.HCM (Thứ 2 – Thứ 6, 8:00–17:00).',
+        ko: '회계·세무 서비스사 <b>SKtax</b>가 FYI를 통해 <b>회계 담당자</b>를 채용 중입니다(호치민 An Phú, 주5일 13–15tr).',
+        en: '<b>SKtax</b> — an accounting & tax services firm — is hiring a <b>Service Accountant</b> via FYI (An Phú, HCMC, Mon–Fri, 13–15M VND).',
+      },
+      initial: 'S', company: 'SKtax', title: 'Kế toán dịch vụ', meta: 'Onsite · An Phú, TP.HCM · 13–15 triệu', tail: BENEFIT_PRIVATE,
+    }),
+  },
+  {
+    match: /^sktax-recommend1-/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử gửi SKtax — Kế toán dịch vụ',
+      ko: '[FYI] SKtax 추천 명단에 선정되셨습니다 — 회계 담당자',
+      en: "[FYI] You've been nominated to SKtax — Service Accountant",
+    },
+    desc: 'SKtax 회계 추천 (9/4): 공개 프레임 — FYI 검토 선정·명단에 프로필 동봉·지원 시 우선 검토. 1그룹(acct).',
+    source: 'scripts/outreach/ktc0904b-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '<b>SKtax</b> — công ty dịch vụ kế toán – thuế — đang tuyển <b>Kế toán dịch vụ</b> qua FYI, làm việc tại An Phú, TP.HCM. Đội ngũ FYI đã xem xét toàn bộ hồ sơ và <b>chọn bạn vào danh sách đề cử</b> — hồ sơ công khai của bạn sẽ được gửi kèm danh sách cho nhà tuyển dụng trong tuần này.',
+        ko: '회계·세무 서비스사 <b>SKtax</b>가 FYI를 통해 <b>회계 담당자</b>를 채용 중입니다. FYI 팀이 이력서 전체를 검토해 회원님을 <b>추천 명단에 선정</b>했으며, 공개 프로필은 이번 주 명단과 함께 담당자에게 전달됩니다.',
+        en: '<b>SKtax</b> — an accounting & tax services firm — is hiring via FYI. The FYI team reviewed all profiles and <b>nominated you</b>; your public profile goes to the recruiter with this week\'s list.',
+      },
+      initial: 'S', company: 'SKtax', title: 'Kế toán dịch vụ', meta: 'Onsite · An Phú, TP.HCM · 13–15 triệu', tail: BENEFIT_PUBLIC,
+    }),
+  },
+  {
+    match: /^komang-recommend1-.*-private/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử — E-commerce Automation Developer tại Komang',
+      ko: '[FYI] 추천 후보 명단에 선정되셨습니다 — Komang 이커머스 자동화 개발자',
+      en: "[FYI] You've been nominated — E-commerce Automation Developer at Komang",
+    },
+    desc: 'Komang 개발 추천 (9/4): 비공개 프레임 — 쿠팡/네이버 셀링 한국 이커머스, Python/RPA 자동화 개발자, HCM/다낭/하노이 10–17tr, 개발직군×Python스킬×1y+ 룰 선정.',
+    source: 'scripts/outreach/ktc0904b-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '<b>Komang</b> — công ty thương mại điện tử Hàn Quốc, nhập khẩu sản phẩm sourcing từ nước ngoài để bán trên Coupang và Naver — đang tuyển <b>E-commerce Automation Developer (Python / RPA)</b> qua FYI: tự động hóa đăng sản phẩm, nhập kho và quản lý tồn kho bằng Python và các công cụ AI.',
+        ko: '쿠팡·네이버에서 소싱 상품을 판매하는 한국 이커머스 기업 <b>Komang</b>이 FYI를 통해 <b>이커머스 자동화 개발자(Python/RPA)</b>를 채용 중입니다 — 상품 등록·입고·재고 관리를 Python과 AI 도구로 자동화.',
+        en: '<b>Komang</b> — a Korean e-commerce company selling sourced products on Coupang and Naver — is hiring an <b>E-commerce Automation Developer (Python/RPA)</b> via FYI.',
+      },
+      initial: 'K', company: 'Komang', title: 'E-commerce Automation Developer (Python / RPA)', meta: 'TP.HCM / Đà Nẵng / Hà Nội · 10–17 triệu', tail: BENEFIT_PRIVATE,
+    }),
+  },
+  {
+    match: /^komang-recommend1-/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử gửi Komang — E-commerce Automation Developer',
+      ko: '[FYI] Komang 추천 명단에 선정되셨습니다 — 이커머스 자동화 개발자',
+      en: "[FYI] You've been nominated to Komang — E-commerce Automation Developer",
+    },
+    desc: 'Komang 개발 추천 (9/4): 공개 프레임 — FYI 검토 선정·명단에 프로필 동봉·지원 시 우선 검토. 1그룹(dev).',
+    source: 'scripts/outreach/ktc0904b-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '<b>Komang</b> — công ty thương mại điện tử Hàn Quốc bán hàng trên Coupang và Naver — đang tuyển <b>E-commerce Automation Developer (Python / RPA)</b> qua FYI. Đội ngũ FYI đã xem xét toàn bộ hồ sơ và <b>chọn bạn vào danh sách đề cử</b> — hồ sơ công khai của bạn sẽ được gửi kèm danh sách cho nhà tuyển dụng trong tuần này.',
+        ko: '쿠팡·네이버 셀링 한국 이커머스 기업 <b>Komang</b>이 FYI를 통해 <b>이커머스 자동화 개발자(Python/RPA)</b>를 채용 중입니다. FYI 팀이 이력서 전체를 검토해 회원님을 <b>추천 명단에 선정</b>했으며, 공개 프로필은 이번 주 명단과 함께 담당자에게 전달됩니다.',
+        en: '<b>Komang</b> — a Korean e-commerce company selling on Coupang and Naver — is hiring via FYI. The FYI team reviewed all profiles and <b>nominated you</b>; your public profile goes to the recruiter with this week\'s list.',
+      },
+      initial: 'K', company: 'Komang', title: 'E-commerce Automation Developer (Python / RPA)', meta: 'TP.HCM / Đà Nẵng / Hà Nội · 10–17 triệu', tail: BENEFIT_PUBLIC,
+    }),
+  },
+  {
+    match: /^s2e-recommend1-.*-private/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử — Cộng tác viên phát triển đối tác tại s2e',
+      ko: '[FYI] 추천 후보 명단에 선정되셨습니다 — s2e 파트너 개발 협력자',
+      en: "[FYI] You've been nominated — Partner Development Collaborator at s2e",
+    },
+    desc: 's2e 파트너개발 추천 (9/4): 비공개 프레임 — 스포츠·교육 한국 기업 베트남 POC 확장, 현지 파트너 소싱 CTV(리모트·프리랜스 7–9tr), Sales 직군 룰 선정(지역 무관).',
+    source: 'scripts/outreach/ktc0904b-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '<b>s2e</b> — công ty Hàn Quốc trong lĩnh vực thể thao – giáo dục, đang mở rộng thí điểm (POC) ra thị trường Việt Nam — đang tuyển <b>Cộng tác viên phát triển đối tác</b> qua FYI: tìm kiếm và kết nối các học viện thể thao, trung tâm đào tạo hoặc trường học tại địa phương. Làm việc từ xa, hình thức cộng tác viên theo dự án.',
+        ko: '스포츠·교육 분야 한국 기업 <b>s2e</b>가 베트남 POC 확장을 위해 FYI를 통해 <b>파트너 개발 협력자</b>(현지 스포츠 아카데미·학교 소싱, 리모트 CTV)를 모집 중입니다.',
+        en: '<b>s2e</b> — a Korean sports-education company expanding its POC to Vietnam — is hiring a <b>Partner Development Collaborator</b> via FYI (remote, freelance).',
+      },
+      initial: 'S', company: 's2e', title: 'Cộng tác viên phát triển đối tác Việt Nam', meta: 'Remote · Freelance/CTV theo dự án POC · 7–9 triệu', tail: BENEFIT_PRIVATE,
+    }),
+  },
+  {
+    match: /^s2e-recommend1-/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử gửi s2e — Cộng tác viên phát triển đối tác',
+      ko: '[FYI] s2e 추천 명단에 선정되셨습니다 — 파트너 개발 협력자',
+      en: "[FYI] You've been nominated to s2e — Partner Development Collaborator",
+    },
+    desc: 's2e 파트너개발 추천 (9/4): 공개 프레임 — FYI 검토 선정·명단에 프로필 동봉·지원 시 우선 검토. 1그룹(partner).',
+    source: 'scripts/outreach/ktc0904b-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '<b>s2e</b> — công ty Hàn Quốc trong lĩnh vực thể thao – giáo dục, đang mở rộng thí điểm (POC) ra thị trường Việt Nam — đang tuyển <b>Cộng tác viên phát triển đối tác</b> qua FYI. Đội ngũ FYI đã xem xét toàn bộ hồ sơ và <b>chọn bạn vào danh sách đề cử</b> — hồ sơ công khai của bạn sẽ được gửi kèm danh sách cho nhà tuyển dụng trong tuần này.',
+        ko: '스포츠·교육 분야 한국 기업 <b>s2e</b>가 FYI를 통해 <b>파트너 개발 협력자</b>를 모집 중입니다. FYI 팀이 이력서 전체를 검토해 회원님을 <b>추천 명단에 선정</b>했으며, 공개 프로필은 이번 주 명단과 함께 담당자에게 전달됩니다.',
+        en: '<b>s2e</b> — a Korean sports-education company — is hiring via FYI. The FYI team reviewed all profiles and <b>nominated you</b>; your public profile goes to the recruiter with this week\'s list.',
+      },
+      initial: 'S', company: 's2e', title: 'Cộng tác viên phát triển đối tác Việt Nam', meta: 'Remote · Freelance/CTV theo dự án POC · 7–9 triệu', tail: BENEFIT_PUBLIC,
+    }),
+  },
+  {
     match: /^nexon-recommend1-qa-private/,
     subject: {
       vi: '[FYI] Bạn được chọn vào danh sách đề cử — QA Game Tester tại NEXON DEV VINA',

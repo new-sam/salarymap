@@ -40,9 +40,9 @@ export default function FilterDropdown({ label, summary, active, children, align
         .fd { position: relative; display: inline-flex; }
         .fd-btn {
           display: inline-flex; align-items: center; gap: 6px;
-          font-family: inherit; font-size: 12.5px; font-weight: 600; color: #444;
+          font-family: inherit; font-size: 14px; font-weight: 600; color: #444;
           background: #fff; border: 1px solid #dcdcda; border-radius: 999px;
-          height: 32px; padding: 0 13px; cursor: pointer; white-space: nowrap;  /* jobs.js 칩 줄과 같은 높이 */
+          height: 38px; padding: 0 16px; cursor: pointer; white-space: nowrap;  /* jobs.js 칩 줄과 같은 높이 */
         }
         .fd-btn:hover { border-color: #999; }
         .fd-btn.open { border-color: #111; }
@@ -73,7 +73,7 @@ export function FilterOption({ checked, onClick, children, multi = true }) {
       <style jsx>{`
         .fo {
           display: flex; align-items: center; gap: 9px; width: 100%;
-          font-family: inherit; font-size: 13px; font-weight: 500; color: #333;
+          font-family: inherit; font-size: 14px; font-weight: 500; color: #333;
           background: none; border: none; border-radius: 8px;
           padding: 8px 9px; cursor: pointer; text-align: left;
         }

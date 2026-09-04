@@ -214,7 +214,7 @@ export default function JobsPage() {
   const [similarApplying, setSimilarApplying] = useState(null)
   const [similarArmed, setSimilarArmed] = useState(null)
   const [canceling, setCanceling] = useState(false)
-  const [page, setPage] = useState(1)
+  const [visibleCount, setVisibleCount] = useState(JOBS_PER_PAGE)
 
   const track = (event, page, meta) => {
     // userId/clientId 를 함께 보내야 유저 단위 dedup·퍼널 분석이 가능(lib/track.js 와 동일 기준).
@@ -230,7 +230,7 @@ export default function JobsPage() {
   }, [detailJob?.id])
 
   // Reset visible count when filters change
-  useEffect(() => { setPage(1) }, [searchQuery, roleFilters, typeFilters, techFilters, expMin, expMax, sourceTab, sortBy, router.query.company])
+  useEffect(() => { setVisibleCount(JOBS_PER_PAGE) }, [searchQuery, roleFilters, typeFilters, techFilters, expMin, expMax, sourceTab, sortBy, router.query.company])
 
   // 직무별 광고 딥링크: /jobs?role=Backend (또는 ?role=cat:software) 로 랜딩하면 해당 직무로
   // 바로 필터 → ATS(기업 직접등록) 공고가 최상단(companyFirst)에 떠서 우선 매칭·지원 유도.
@@ -641,7 +641,8 @@ export default function JobsPage() {
     const featuredJobs = live.filter(j => j.is_featured)
       .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
     const fillJobs = live.filter(j => !j.is_featured).sort((a, b) => hotScore(b) - hotScore(a))
-    return [...featuredJobs, ...fillJobs].slice(0, 4)
+    // 5열 그리드 한 줄을 채운다 — 4열(≤1280px)에선 CSS가 5번째를 숨긴다
+    return [...featuredJobs, ...fillJobs].slice(0, 5)
   })()
   const hotIds = new Set(hotJobs.map(j => j.id))
   const gridJobs = (() => {
@@ -653,25 +654,19 @@ export default function JobsPage() {
     return base
   })()
 
-  /* 페이지네이션 — 20개씩 끊어 보여준다(무한 스크롤에서 전환).
-     목록이 길어 스크롤로만 훑으면 "몇 개 중 어디"인지 감이 없고 뒤로 돌아오기도 어렵다. */
-  const totalPages = Math.max(1, Math.ceil(gridJobs.length / JOBS_PER_PAGE))
-  const curPage = Math.min(page, totalPages)
-  const pageJobs = gridJobs.slice((curPage - 1) * JOBS_PER_PAGE, curPage * JOBS_PER_PAGE)
-  // 페이지를 바꾸면 목록 맨 위로 — 스크롤이 중간에 남아 있으면 다음 페이지 중간부터 보인다.
-  const goPage = (n) => {
-    setPage(n)
-    document.querySelector('.jf-bar')?.scrollIntoView({ block: 'start', behavior: 'smooth' })
-  }
-  /* 페이지 번호 — 1 … 4 5 [6] 7 8 … 20 형태로 앞뒤 2개씩만. */
-  const pageNums = (() => {
-    const out = [], push = (v) => { if (out[out.length - 1] !== v) out.push(v) }
-    for (let i = 1; i <= totalPages; i++) {
-      if (i === 1 || i === totalPages || Math.abs(i - curPage) <= 2) push(i)
-      else push('…')
-    }
-    return out
-  })()
+  /* 무한 스크롤 — 20개씩 늘려 보여준다(페이지네이션에서 전환). 하단 센티널이 뷰포트에
+     들어오면 다음 배치를 붙인다. 이미 보이는 상태로 붙어도 observe 시점에 콜백이 한 번 오므로 연쇄 로드된다. */
+  const visibleJobs = gridJobs.slice(0, visibleCount)
+  const moreRef = useRef(null)
+  useEffect(() => {
+    const el = moreRef.current
+    if (!el) return
+    const ob = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) setVisibleCount(c => c + JOBS_PER_PAGE)
+    }, { rootMargin: '600px' })
+    ob.observe(el)
+    return () => ob.disconnect()
+  }, [gridJobs.length, visibleCount])
 
   const resetFilters = () => { setRoleFilters([]); setTypeFilters([]); setExpMin(''); setExpMax(''); setTechFilters([]); setSearchQuery('') }
 
@@ -929,7 +924,7 @@ export default function JobsPage() {
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         body { background: #f7f7f5; -webkit-font-smoothing: antialiased; }
 
-        .jw { max-width: 1080px; margin: 0 auto; padding: 36px 40px 80px; }
+        .jw { width: 90%; max-width: 1400px; margin: 0 auto; padding: 36px 0 80px; }
         .jw-eye { font-size: 11px; font-weight: 700; color: #ff4400; letter-spacing: .08em; margin-bottom: 8px; }
         .jw-h1 { font-size: 24px; font-weight: 800; color: #111; margin-bottom: 6px; letter-spacing: -0.3px; }
         .jw-sub { font-size: 14px; color: #999; }
@@ -954,18 +949,21 @@ export default function JobsPage() {
 
         /* 칩 한 줄 — 출처(전체/K-company) · 직무 · 경력 · 근무형태 · 상세필터 순으로 왼쪽 정렬,
            '마감된 공고 제외'만 오른쪽 끝. 아래 .jf-bar 는 건수(좌) / 정렬(우) 두 덩어리. */
-        .jf { display: flex; gap: 8px; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid #ececea; flex-wrap: wrap; align-items: center; }
-        /* 칩 높이 통일 32px — 출처칩·드롭다운·상세필터가 각자 다른 padding 이라 한 줄에
+        /* 건수·정렬 바 + 필터 행을 한 덩어리로 상단 고정 — 스크롤 중에도 필터를 바로 만진다 */
+        /* 아래 간격은 margin 이 아니라 padding — margin 은 투명해서 스크롤되는 카드가 틈으로 비친다 */
+        .jf-sticky { position: sticky; top: 56px; z-index: 15; background: #f7f7f5; padding-bottom: 24px; }
+        .jf { display: flex; gap: 10px; padding-bottom: 16px; border-bottom: 1px solid #ececea; flex-wrap: wrap; align-items: center; }
+        /* 칩 높이 통일 38px — 출처칩·드롭다운·상세필터가 각자 다른 padding 이라 한 줄에
            놓으면 들쭉날쭉했다. 드롭다운(.fd-btn)은 styled-jsx 로 스코프돼 있어 여기서 못 건드리므로
-           FilterDropdown 안에서 같은 32px 로 맞춰 둔다. */
+           FilterDropdown 안에서 같은 38px 로 맞춰 둔다. */
         .jf > .jf-chip, .jf > .jf-open {
-          height: 32px; padding: 0 13px; font-size: 12.5px; border-radius: 999px;
+          height: 38px; padding: 0 16px; font-size: 14px; border-radius: 999px;
         }
         .jf-open { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: #555; background: #fafaf8; border: 1px solid #e0e0e0; padding: 8px 14px; border-radius: 999px; cursor: pointer; font-family: inherit; white-space: nowrap; transition: all .15s; }
         .jf-open:hover { border-color: #999; }
         .jf-open.on { color: #ff4400; border-color: #ff4400; background: #fff2ec; }
         .jf-open-n { display: inline-flex; align-items: center; justify-content: center; min-width: 17px; height: 17px; border-radius: 50%; background: #ff4400; color: #fff; font-size: 11px; font-weight: 800; padding: 0 4px; }
-        .jf-sum { display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; font-weight: 600; color: #ff4400; background: #fff2ec; border: 1px solid rgba(255,68,0,0.25); border-radius: 999px; padding: 7px 12px; cursor: pointer; font-family: inherit; white-space: nowrap; }
+        .jf-sum { display: inline-flex; align-items: center; gap: 5px; font-size: 13.5px; font-weight: 600; color: #ff4400; background: #fff2ec; border: 1px solid rgba(255,68,0,0.25); border-radius: 999px; padding: 9px 14px; cursor: pointer; font-family: inherit; white-space: nowrap; }
         .jf-sum-x { font-size: 14px; line-height: 1; color: rgba(255,68,0,0.7); }
         .jf-dd { position: relative; }
         .jf-dd-btn { font-size: 13px; font-weight: 500; color: #555; background: #fafaf8; border: 1px solid #e0e0e0; padding: 8px 14px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all .15s; white-space: nowrap; font-family: inherit; }
@@ -986,7 +984,7 @@ export default function JobsPage() {
         .jf-dd-branch { padding-left: 12px; }
         .jf-dd-sub { color: #666; font-weight: 500; }
         .jf-dd-count { color: #bbb; font-weight: 500; font-size: 12px; }
-        .jf-reset { font-size: 13px; color: #999; background: none; border: none; cursor: pointer; padding: 8px 4px; font-family: inherit; text-decoration: underline; white-space: nowrap; }
+        .jf-reset { font-size: 14px; color: #999; background: none; border: none; cursor: pointer; padding: 8px 4px; font-family: inherit; text-decoration: underline; white-space: nowrap; }
         .jf-reset:hover { color: #666; }
         .jf-exp-panel { position: absolute; top: calc(100% + 4px); left: 0; background: #fafaf8; border: 1px solid #eee; border-radius: 12px; padding: 20px; min-width: 280px; z-index: 20; box-shadow: 0 8px 24px rgba(0,0,0,0.1); }
         .jf-exp-title { font-size: 14px; font-weight: 700; color: #111; margin-bottom: 16px; }
@@ -1004,32 +1002,22 @@ export default function JobsPage() {
         .jf-exp-apply:hover { background: #e63d00; }
 
         /* 건수/정렬이 위, 칩 줄이 아래. 구분선은 두 줄을 묶어 목록과 가르도록 아래쪽(.jf)에 둔다. */
-        .jf-bar { position: sticky; top: 56px; z-index: 15; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 0; background: #f7f7f5; padding: 10px 0 6px; }
+        .jf-bar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 0; padding: 16px 0 14px; }
         .jf-bar-l { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
         .jf-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: #555; background: #fafaf8; border: 1px solid #e0e0e0; border-radius: 999px; padding: 5px 12px; cursor: pointer; font-family: inherit; white-space: nowrap; }
         .jf-chip:hover { border-color: #999; }
-        /* 페이지네이션 */
-        .jp { display: flex; align-items: center; justify-content: center; gap: 4px; margin: 28px 0 8px; flex-wrap: wrap; }
-        .jp-n, .jp-nav {
-          min-width: 34px; height: 34px; padding: 0 8px;
-          font-family: inherit; font-size: 13px; font-weight: 600; color: #444;
-          background: #fff; border: 1px solid #e0e0de; border-radius: 8px; cursor: pointer;
-        }
-        .jp-n:hover, .jp-nav:not(:disabled):hover { border-color: #999; }
-        .jp-n.on { background: #ff4400; border-color: #ff4400; color: #fff; font-weight: 800; }
-        .jp-nav { font-size: 16px; line-height: 1; color: #666; }
-        .jp-nav:disabled { opacity: .35; cursor: default; }
-        .jp-gap { min-width: 20px; text-align: center; color: #aaa; font-size: 13px; }
+        /* 무한 스크롤 센티널 — 0 높이면 브라우저에 따라 교차 판정이 안 잡힐 수 있다 */
+        .jg-more { height: 1px; }
         /* 출처 탭 — 선택된 쪽만 브랜드 오렌지로 채운다(GlobalNav 의 K-company 칩과 같은 톤) */
         .jf-src-btn.on { background: #ff4400; border-color: #ff4400; color: #fff; }
         .jf-src-btn.on:hover { border-color: #ff4400; }
         .jf-chip-n { display: inline-flex; align-items: center; justify-content: center; min-width: 16px; height: 16px; border-radius: 50%; background: #ff4400; color: #fff; font-size: 10px; font-weight: 800; padding: 0 4px; }
         .jf-chip-x { font-size: 14px; color: #999; line-height: 1; }
-        .jf-check { display: flex; align-items: center; gap: 5px; font-size: 13px; color: #777; cursor: pointer; user-select: none; }
+        .jf-check { display: flex; align-items: center; gap: 5px; font-size: 14px; color: #777; cursor: pointer; user-select: none; }
         .jf-check input { accent-color: #ff4400; cursor: pointer; margin: 0; }
-        .jf-count { font-size: 16px; font-weight: 800; color: #111; }
+        .jf-count { font-size: 18px; font-weight: 800; color: #111; }
         .jf-sort { display: flex; background: #f5f5f5; border-radius: 8px; overflow: hidden; }
-        .jf-sort-btn { font-size: 13px; font-weight: 500; color: #777; background: none; border: none; padding: 7px 14px; cursor: pointer; font-family: inherit; transition: all .15s; }
+        .jf-sort-btn { font-size: 14px; font-weight: 500; color: #777; background: none; border: none; padding: 7px 14px; cursor: pointer; font-family: inherit; transition: all .15s; }
         .jf-sort-btn.on { background: #fafaf8; color: #111; font-weight: 700; box-shadow: 0 1px 3px rgba(0,0,0,0.08); border-radius: 6px; }
         .jf-sort-saved { display: inline-flex; align-items: center; border-left: 1px solid #e0e0e0; margin-left: 2px; }
         .jf-sort-saved.on { color: #ff4400; }
@@ -1037,7 +1025,8 @@ export default function JobsPage() {
         /* Hot jobs */
         /* 헤더(제목+검색)와 가르는 구분선 — 아래 칩 줄의 구분선과 같은 색으로 맞춘다.
            padding-top 45 + border 1 = 46px — 아래 '채용공고 매칭' 텍스트 위 여백과 같은 값. */
-        .jh { margin-top: 4px; margin-bottom: 32px; padding-top: 45px; border-top: 1px solid #ececea; }
+        /* 필터 블록 바로 아래라 위쪽 보더는 필터의 border-bottom 이 대신한다 */
+        .jh { margin-bottom: 32px; }
         .jh-title {
           font-size: 16px; font-weight: 800; color: #111; margin-bottom: 14px;
           display: flex; align-items: center; gap: 7px;
@@ -1062,7 +1051,7 @@ export default function JobsPage() {
         }
         .jh-divider { height: 1px; background: #eee; margin-top: 32px; }
 
-        .jg { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 24px; align-items: stretch; }
+        .jg { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 24px; align-items: stretch; }
 
         /* Card */
         .jc { cursor: pointer; display: flex; flex-direction: column; min-width: 0; position: relative; }
@@ -1077,13 +1066,13 @@ export default function JobsPage() {
         .jc-bump b { color: #ff4400; font-weight: 700; }
         .jc-bm { position: absolute; top: 10px; right: 10px; width: 28px; height: 28px; padding: 0; background: none; display: flex; align-items: center; justify-content: center; z-index: 2; border: none; cursor: pointer; filter: drop-shadow(0 1px 3px rgba(0,0,0,0.5)); }
         .jc-body { flex: 1; display: flex; flex-direction: column; }
-        .jc-t { font-size: 15px; font-weight: 600; color: #111; margin-bottom: 3px; line-height: 1.35; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-        .jc-co { font-size: 13px; color: #777; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .jc-t { font-size: 16px; font-weight: 600; color: #111; margin-bottom: 3px; line-height: 1.35; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+        .jc-co { font-size: 13.5px; color: #777; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .jc-co-link { cursor: pointer; display: inline-block; max-width: 100%; }
         .jc-co-link:hover { color: #ff4400; text-decoration: underline; }
         .jd-co-link { cursor: pointer; text-decoration: none; }
         .jd-co-link:hover { color: #ff4400; text-decoration: underline; }
-        .jc-sal { font-size: 13.5px; font-weight: 800; color: #ff4400; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: -0.3px; }
+        .jc-sal { font-size: 14px; font-weight: 800; color: #ff4400; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: -0.3px; }
         .jc-bottom { margin-top: 5px; }
         .jc-m { font-size: 12px; color: #999; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
         .jc-m-txt { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -1191,9 +1180,10 @@ export default function JobsPage() {
 
         /* Pagination */
 
+        @media (max-width: 1280px) { .jg { grid-template-columns: repeat(4, minmax(0, 1fr)); } .jh .jg > .jc:nth-child(5) { display: none; } }
         @media (max-width: 900px) { .jg { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
         @media (max-width: 768px) {
-          .jw { padding: 28px 16px 60px; }
+          .jw { width: 100%; padding: 28px 16px 60px; }
           /* 좁은 화면에선 옆에 둘 자리가 없다 — 제목 아래 전체 폭으로 */
           .jw-head { flex-direction: column; align-items: stretch; gap: 14px; }
           .jf-search { width: 100%; }
@@ -1205,9 +1195,9 @@ export default function JobsPage() {
           .jbm-tag { font-size: 12px; padding: 3px 8px; }
           .jf { gap: 6px; }
           .jf-dd-btn { font-size: 12px; padding: 7px 10px; }
-          .jf-bar { top: 52px; transition: top .25s ease; }
-          /* 헤더가 스크롤로 숨으면(_app.js) 매칭 카운트 바도 최상단에 붙인다. */
-          body[data-chrome-hidden="1"] .jf-bar { top: 0; }
+          .jf-sticky { top: 52px; transition: top .25s ease; }
+          /* 헤더가 스크롤로 숨으면(_app.js) 필터 블록도 최상단에 붙인다. */
+          body[data-chrome-hidden="1"] .jf-sticky { top: 0; }
           .jf-sort { flex-wrap: wrap; }
           .jf-sort-btn { font-size: 12px; padding: 6px 10px; }
           .jd { width: 100%; top: 52px; height: calc(100vh - 52px); height: calc(100dvh - 52px); z-index: 100000; padding-bottom: calc(68px + env(safe-area-inset-bottom)); }
@@ -1271,21 +1261,6 @@ export default function JobsPage() {
               </div>
             )}
 
-            {/* Hot jobs section */}
-            {hotJobs.length > 0 && (
-              <div className="jh">
-                <div className="jh-title"><span className="jh-trend"><span className="jh-trend-arrows"><svg className="jh-trend-arrow" width="12" height="6" viewBox="0 0 12 6"><polyline points="1,5 6,1 11,5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg><svg className="jh-trend-arrow" width="12" height="6" viewBox="0 0 12 6"><polyline points="1,5 6,1 11,5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg><svg className="jh-trend-arrow" width="12" height="6" viewBox="0 0 12 6"><polyline points="1,5 6,1 11,5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg></span></span>{t('jobs.hotTitle')}</div>
-                <div className="jg">
-                  {hotJobs.map((job, idx) => (
-                    <JobCard key={job.id} job={job} idx={idx} bump={getBump(job)} matched={isProfileMatch(job)}
-                      bookmarked={bookmarks.includes(job.id)}
-                      onOpen={openDetail} onToggleBookmark={toggleBookmark} typeLabel={typeLabel} t={t} lang={lang} />
-                  ))}
-                </div>
-                <div className="jh-divider" />
-              </div>
-            )}
-
             {!jobsLoaded && (
               <div className="jg jg-skeleton">
                 {[...Array(6)].map((_, i) => (
@@ -1301,6 +1276,7 @@ export default function JobsPage() {
               </div>
             )}
 
+            <div className="jf-sticky">
             <div className="jf-bar" style={{ visibility: jobsLoaded ? 'visible' : 'hidden' }}>
               <div className="jf-bar-l">
                 <div className="jf-count">{t('jobs.matchCount', { count: filteredJobs.length })}</div>
@@ -1401,28 +1377,34 @@ export default function JobsPage() {
                 <span>{t('jobs.hideExpired')}</span>
               </label>
             </div>
+            </div>
+
+            {/* Hot jobs section — 필터 아래, 전체 목록과는 구분선(.jh-divider)으로 가른다 */}
+            {hotJobs.length > 0 && (
+              <div className="jh">
+                <div className="jh-title"><span className="jh-trend"><span className="jh-trend-arrows"><svg className="jh-trend-arrow" width="12" height="6" viewBox="0 0 12 6"><polyline points="1,5 6,1 11,5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg><svg className="jh-trend-arrow" width="12" height="6" viewBox="0 0 12 6"><polyline points="1,5 6,1 11,5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg><svg className="jh-trend-arrow" width="12" height="6" viewBox="0 0 12 6"><polyline points="1,5 6,1 11,5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg></span></span>{t('jobs.hotTitle')}</div>
+                <div className="jg">
+                  {hotJobs.map((job, idx) => (
+                    <JobCard key={job.id} job={job} idx={idx} bump={getBump(job)} matched={isProfileMatch(job)}
+                      bookmarked={bookmarks.includes(job.id)}
+                      onOpen={openDetail} onToggleBookmark={toggleBookmark} typeLabel={typeLabel} t={t} lang={lang} />
+                  ))}
+                </div>
+                <div className="jh-divider" />
+              </div>
+            )}
 
             {/* Grid */}
             <div className="jg" style={{ opacity: jobsLoaded ? 1 : 0, transition: 'opacity .3s' }}>
-              {pageJobs.map((job, idx) => (
+              {visibleJobs.map((job, idx) => (
                 <JobCard key={job.id} job={job} idx={idx} bump={getBump(job)} matched={isProfileMatch(job)}
                   bookmarked={bookmarks.includes(job.id)}
                   onOpen={openDetail} onToggleBookmark={toggleBookmark} typeLabel={typeLabel} t={t} lang={lang} />
               ))}
             </div>
 
-            {/* 페이지네이션 — 20개씩. 한 페이지뿐이면 감춘다. */}
-            {jobsLoaded && totalPages > 1 && (
-              <nav className="jp" aria-label="pagination">
-                <button className="jp-nav" disabled={curPage === 1} onClick={() => goPage(curPage - 1)} aria-label="previous">‹</button>
-                {pageNums.map((n, i) => (
-                  n === '…'
-                    ? <span key={`e${i}`} className="jp-gap">…</span>
-                    : <button key={n} className={`jp-n${n === curPage ? ' on' : ''}`} onClick={() => goPage(n)}>{n}</button>
-                ))}
-                <button className="jp-nav" disabled={curPage === totalPages} onClick={() => goPage(curPage + 1)} aria-label="next">›</button>
-              </nav>
-            )}
+            {/* 무한 스크롤 센티널 — 더 보여줄 게 남았을 때만 붙는다 */}
+            {jobsLoaded && visibleCount < gridJobs.length && <div ref={moreRef} className="jg-more" />}
 
             {/* Empty state */}
             {jobsLoaded && filteredJobs.length === 0 && (
