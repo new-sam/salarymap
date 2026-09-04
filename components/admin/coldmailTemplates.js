@@ -418,7 +418,7 @@ const REGISTER2_I18N = {
     headline: 'Đăng ký CV, nhà tuyển dụng sẽ tìm đến bạn.',
     stat1n: '3,2', stat1: 'lời mời mỗi tuần',
     statNote: 'Số liệu thực tế trung bình của người đã đăng ký CV trên FYI.',
-    body: 'Bạn không cần tìm việc nữa. Khi có vị trí phù hợp, chúng tôi gửi hồ sơ của bạn trực tiếp đến nhà tuyển dụng.',
+    body: 'Bạn không cần tìm việc nữa. Khi có vị trí phù hợp, chúng tôi sẽ báo ngay cho bạn qua email — và hồ sơ của bạn sẽ được ưu tiên xem xét.',
     body2: 'Chưa có ý định chuyển việc? Không sao — lời mời bạn nhận được chính là lợi thế chắc chắn nhất khi đàm phán tăng lương ở công ty hiện tại.',
     cta: 'Đăng ký CV',
     ctaNote: 'Không cần đăng nhập · khoảng 30 giây',
@@ -429,7 +429,7 @@ const REGISTER2_I18N = {
     headline: '이력서를 등록해두면 담당자가 먼저 찾아옵니다.',
     stat1n: '3.2', stat1: '1주일 평균 받는 오퍼',
     statNote: '이력서를 등록한 분들이 실제로 받은 평균입니다.',
-    body: '공고를 찾아다니지 않으셔도 됩니다. 맞는 자리가 열리면 회원님의 이력서를 기업 담당자에게 바로 전달합니다.',
+    body: '공고를 찾아다니지 않으셔도 됩니다. 알맞은 포지션이 열리면 메일로 바로 알려드리고, 회원님의 이력서는 우선 검토 대상이 됩니다.',
     body2: '당장 이직 생각이 없으셔도 괜찮습니다. 받아둔 오퍼는 지금 회사와의 연봉 협상에서 가장 확실한 카드가 됩니다.',
     cta: '이력서 등록하기',
     ctaNote: '로그인 없이 파일만 · 30초',
@@ -440,7 +440,7 @@ const REGISTER2_I18N = {
     headline: 'Register your CV — recruiters will come to you.',
     stat1n: '3.2', stat1: 'offers per week on average',
     statNote: 'Actual average for users who registered a CV on FYI.',
-    body: 'You don\'t need to job-hunt anymore. When a matching position opens, we send your CV directly to the recruiter.',
+    body: 'You don\'t need to job-hunt anymore. When a matching position opens, we\'ll email you right away — and your CV gets priority review.',
     body2: 'Not planning to switch jobs right now? That\'s fine — an offer in hand is your strongest card when negotiating a raise at your current company.',
     cta: 'Register CV',
     ctaNote: 'No login needed · about 30 seconds',
@@ -453,7 +453,7 @@ const registerHtml2 = (lang) => {
 <body style="margin:0;background:#f4f2ee;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#1a1612">
 <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f2ee"><tr><td align="center" style="padding:32px 16px 40px">
 <table width="100%" cellpadding="0" cellspacing="0" style="max-width:480px">
-  <tr><td style="font-size:17px;font-weight:800;color:#ff6000;letter-spacing:-0.01em;padding-bottom:14px">FYI</td></tr>
+  <tr><td style="padding-bottom:14px"><img src="https://salary-fyi.com/fyi-logo.png" height="24" alt="FYI" style="height:24px;width:auto;display:block"></td></tr>
   <tr><td style="background:#ffffff;border-radius:18px;padding:32px 28px 28px">
     <table width="100%" cellpadding="0" cellspacing="0">
       <tr><td style="font-size:13.5px;color:#8a8177;padding-bottom:12px">${s.greeting}</td></tr>
@@ -2247,13 +2247,13 @@ export const COLDMAIL_TEMPLATES = [
     html: registerBonusHtml,
   },
   {
-    match: /^resume-register-(apply2|jobcard|rest)/,
+    match: /^resume-register-(apply2|all2|jobcard|rest)/,
     subject: {
       vi: '{{name}} ơi, người đăng ký CV nhận trung bình 3,2 lời mời mỗi tuần',
       ko: '{{name}}님, 이력서 등록자는 1주일 평균 3.2건의 오퍼를 받습니다',
       en: '{{name}}, CV registrants get 3.2 offers a week on average',
     },
-    desc: '이력서 등록 유도 v2 (8/5): 1차의 조작 수치(월7건·85%) 폐기 → 실측 "1주일 평균 오퍼 3.2건" 단일 스탯 + 이름 개인화 제목 + 연봉협상 앵글(당장 이직 안 해도 오퍼=협상 카드) + 수신거부 신설(/api/coldmail/unsub). apply2=지원버튼 이탈층(apply1 미등록 재접촉 포함) / jobcard1=공고카드 클릭층 / rest1=그 외.',
+    desc: '이력서 등록 유도 v2 (8/5): 1차의 조작 수치(월7건·85%) 폐기 → 실측 "1주일 평균 오퍼 3.2건" 단일 스탯 + 이름 개인화 제목 + 연봉협상 앵글(당장 이직 안 해도 오퍼=협상 카드) + 수신거부 신설(/api/coldmail/unsub). apply2=지원버튼 이탈층(apply1 미등록 재접촉 포함) / jobcard1=공고카드 클릭층 / rest1=그 외 / all2(9/4)=미등록 전 세그먼트 통합 2차 — 본문을 "메일로 공고 알림 + 우선 검토 대상" 프레임으로 교체.',
     source: 'scripts/outreach/resume-register-coldmail.mjs',
     html: registerHtml2,
   },

@@ -55,7 +55,7 @@ const COPY = {
     lead: 'Đăng ký CV, nhà tuyển dụng sẽ tìm đến bạn.',
     stat1n: '3,2', stat1: 'lời mời mỗi tuần',
     statNote: 'Số liệu thực tế trung bình của người đã đăng ký CV trên FYI.',
-    body: 'Bạn không cần tìm việc nữa. Khi có vị trí phù hợp, chúng tôi gửi hồ sơ của bạn trực tiếp đến nhà tuyển dụng.',
+    body: 'Bạn không cần tìm việc nữa. Khi có vị trí phù hợp, chúng tôi sẽ báo ngay cho bạn qua email — và hồ sơ của bạn sẽ được ưu tiên xem xét.',
     body2: 'Chưa có ý định chuyển việc? Không sao — lời mời bạn nhận được chính là lợi thế chắc chắn nhất khi đàm phán tăng lương ở công ty hiện tại.',
     note: 'Không cần đăng nhập · khoảng 30 giây',
     cta: 'Đăng ký CV',
@@ -68,7 +68,7 @@ const COPY = {
     lead: '이력서를 등록해두면 담당자가 먼저 찾아옵니다.',
     stat1n: '3.2', stat1: '1주일 평균 받는 오퍼',
     statNote: '이력서를 등록한 분들이 실제로 받은 평균입니다.',
-    body: '공고를 찾아다니지 않으셔도 됩니다. 맞는 자리가 열리면 회원님의 이력서를 기업 담당자에게 바로 전달합니다.',
+    body: '공고를 찾아다니지 않으셔도 됩니다. 알맞은 포지션이 열리면 메일로 바로 알려드리고, 회원님의 이력서는 우선 검토 대상이 됩니다.',
     body2: '당장 이직 생각이 없으셔도 괜찮습니다. 받아둔 오퍼는 지금 회사와의 연봉 협상에서 가장 확실한 카드가 됩니다.',
     note: '로그인 없이 파일만 · 30초',
     cta: '이력서 등록하기',
@@ -89,7 +89,7 @@ function emailHtml(name, url, unsubUrl, c) {
 <body style="margin:0;background:#f4f2ee;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#1a1612">
 <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f2ee"><tr><td align="center" style="padding:32px 16px 40px">
 <table width="100%" cellpadding="0" cellspacing="0" style="max-width:480px">
-  <tr><td style="font-size:17px;font-weight:800;color:#ff6000;letter-spacing:-0.01em;padding-bottom:14px">FYI</td></tr>
+  <tr><td style="padding-bottom:14px"><img src="https://salary-fyi.com/fyi-logo.png" height="24" alt="FYI" style="height:24px;width:auto;display:block"></td></tr>
   <tr><td style="background:#ffffff;border-radius:18px;padding:32px 28px 28px">
     <table width="100%" cellpadding="0" cellspacing="0">
       <tr><td style="font-size:13.5px;color:#8a8177;padding-bottom:12px">${esc(c.hi(firstName(name)))}</td></tr>
