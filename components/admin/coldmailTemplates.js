@@ -1457,6 +1457,42 @@ export const COLDMAIL_TEMPLATES = [
     }),
   },
   {
+    match: /^sunrise-.*-private/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử — Chuyên viên Sales tại Sunrise Vina',
+      ko: '[FYI] 추천 후보 명단에 선정되셨습니다 — Sunrise Vina B2B 세일즈',
+      en: "[FYI] You've been nominated — Sales Specialist at Sunrise Vina",
+    },
+    desc: 'Sunrise Vina 추천 (9/4 3차): 비공개 프레임 — B2B 세일즈(V71), HCM/하노이/빈즈엉 복수 근무지, Sales×지역 룰 선정. 하노이 Sales 풀 첫 활용. R&D(V72 화학·하노이)는 풀 0 미발송. 1그룹(sales).',
+    source: 'scripts/outreach/ktc0904-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '<b>Sunrise Vina</b> — doanh nghiệp sản xuất đang tuyển dụng qua FYI — tuyển <b>Chuyên viên Sales</b> (B2B, phụ trách và phát triển thị trường khu vực), làm việc tại TP.HCM / Hà Nội / Bình Dương, mức lương 15–20 triệu.',
+        ko: '제조기업 <b>Sunrise Vina</b>가 FYI를 통해 <b>B2B 세일즈</b>를 채용 중입니다(호치민/하노이/빈즈엉, 15–20M).',
+        en: '<b>Sunrise Vina</b> — a manufacturer hiring via FYI — is looking for a <b>B2B Sales Specialist</b> (HCMC / Hanoi / Binh Duong, 15–20M VND).',
+      },
+      initial: 'S', company: 'Sunrise Vina', title: 'Chuyên viên Sales', meta: 'Onsite · TP.HCM / Hà Nội / Bình Dương · 15–20 triệu', tail: BENEFIT_PRIVATE,
+    }),
+  },
+  {
+    match: /^sunrise-/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử gửi Sunrise Vina — Chuyên viên Sales',
+      ko: '[FYI] Sunrise Vina 추천 명단에 선정되셨습니다 — B2B 세일즈',
+      en: "[FYI] You've been nominated to Sunrise Vina — Sales Specialist",
+    },
+    desc: 'Sunrise Vina 추천 (9/4 3차): 공개 프레임 — FYI 검토 선정·명단에 프로필 동봉·지원 시 우선 검토. 1그룹(sales).',
+    source: 'scripts/outreach/ktc0904-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '<b>Sunrise Vina</b> — doanh nghiệp sản xuất đang tuyển dụng qua FYI — tuyển <b>Chuyên viên Sales</b> (B2B, TP.HCM / Hà Nội / Bình Dương, 15–20 triệu). Đội ngũ FYI đã xem xét toàn bộ hồ sơ và <b>chọn bạn vào danh sách đề cử</b> — hồ sơ công khai của bạn sẽ được gửi kèm danh sách cho nhà tuyển dụng trong tuần này.',
+        ko: '제조기업 <b>Sunrise Vina</b>가 FYI를 통해 <b>B2B 세일즈</b>를 채용 중입니다. FYI 팀이 이력서 전체를 검토해 회원님을 <b>추천 명단에 선정</b>했으며, 공개 프로필은 이번 주 명단과 함께 담당자에게 전달됩니다.',
+        en: '<b>Sunrise Vina</b> — a manufacturer hiring via FYI — is looking for a <b>B2B Sales Specialist</b>. The FYI team reviewed all profiles and <b>nominated you</b>; your public profile goes to the recruiter with this week\'s list.',
+      },
+      initial: 'S', company: 'Sunrise Vina', title: 'Chuyên viên Sales', meta: 'Onsite · TP.HCM / Hà Nội / Bình Dương · 15–20 triệu', tail: BENEFIT_PUBLIC,
+    }),
+  },
+  {
     match: /^sts-recommend1-sales-private/,
     subject: {
       vi: '[FYI] Bạn được chọn vào danh sách đề cử — Sale Thiết Bị Gia Dụng tại STS',

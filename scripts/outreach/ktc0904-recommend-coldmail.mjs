@@ -34,6 +34,7 @@ const JOBS = {
   R145: 'c4e49445-ea04-4941-a773-4331d033b9ac', R146: 'c58646d8-aeb0-49d1-a8c0-60884f9a80e7',
   R147: '14849ca1-1e19-4f75-9f03-0f18323c461e',
   V63: '131e7837-3010-417a-af5d-8fa9dbc83d87', // STS 세일즈 — 9/4 KTC 회신으로 보류 해제(JD 기술내용=의도, 기술 아는 세일즈 원함)
+  V71: '48353acf-c8f1-45cc-996d-3261712c8d3b', // Sunrise Vina 세일즈 — HCM/하노이/빈즈엉, 하노이 Sales 풀 첫 활용. V72(R&D 화학·하노이)는 풀 0으로 미발송
   V33: '4a0db4d1-a4ba-4fbe-844f-890a5255f101', // 8/31 nexon-unity — V70 제외용(발송 안 함)
 }
 
@@ -45,6 +46,7 @@ const locBucket = (loc) => {
   return 'X'
 }
 const inHcmc = (p) => ['A', 'B'].includes(locBucket(p.location))
+const inHanoi = (p) => /(hà nội|ha noi|hanoi|\bhn\b)/i.test(String(p.location || ''))
 const roles = (p) => new Set([p.position, ...(p.desired_roles || [])].filter(Boolean))
 const hasAny = (p, arr) => [...roles(p)].some((r) => arr.includes(r))
 const y = (p) => p.yoe_months ?? 0
@@ -138,6 +140,14 @@ const GROUPS = [
     pick: (p) => (inHcmc(p) && hasAny(p, CONTENT) && y(p) >= 12 && y(p) <= 60 ? locA(p) + (hasAny(p, ['Design']) ? 1 : 0) : null),
   },
   {
+    // 9/4 3차: Sunrise Vina 세일즈(V71) — HCM/하노이/빈즈엉 복수 근무지, 하노이 Sales 풀(20명) 첫 활용.
+    // 당일 STS 세일즈 기수신 41명은 todays 체크로 자동 제외 — 다음 주 간격 후 재실행하면 그쪽도 흡수됨
+    gkey: 'sales', brand: 'sunrise', jobKey: 'V71',
+    label: { vi: 'Chuyên viên Sales', ko: 'B2B 세일즈' },
+    pick: (p) => ((inHcmc(p) || inHanoi(p)) && hasAny(p, SALES)
+      ? (locBucket(p.location) === 'A' || inHanoi(p) ? 2 : 0) + (y(p) >= 12 ? 1 : 0) : null),
+  },
+  {
     // 9/4 2차: KTC 회신(기술 아는 세일즈 필요·JD 유지)으로 보류 해제 — 기술/B2B 신호 상위 스코어, 카피에 기술 요건 명시
     gkey: 'sales', brand: 'sts', copyKey: 'stssales', jobKey: 'V63',
     label: { vi: 'Sale Thiết Bị Gia Dụng', ko: '가전·설비 세일즈' },
@@ -175,6 +185,10 @@ const BRANDS = {
   sts: {
     company: 'STS', initial: 'S', meta: 'Onsite · Quận 7, TP.HCM',
     intro: '<b>STS</b> — doanh nghiệp đang tuyển dụng qua FYI, văn phòng tại Quận 7, TP.HCM.',
+  },
+  sunrise: {
+    company: 'Sunrise Vina', initial: 'S', meta: 'Onsite · TP.HCM / Hà Nội / Bình Dương · 15–20 triệu',
+    intro: '<b>Sunrise Vina</b> — doanh nghiệp sản xuất đang tuyển dụng qua FYI — tuyển <b>Chuyên viên Sales</b> (B2B, phụ trách và phát triển thị trường khu vực), làm việc tại TP.HCM / Hà Nội / Bình Dương, mức lương 15–20 triệu.',
   },
   stssales: {
     company: 'STS', initial: 'S', meta: 'Onsite · Quận 7, TP.HCM · Ưu tiên hiểu biết kỹ thuật',
