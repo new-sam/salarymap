@@ -1277,6 +1277,42 @@ export const COLDMAIL_TEMPLATES = [
     }),
   },
   {
+    match: /^nexon-recommend1-qa-private/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử — QA Game Tester tại NEXON DEV VINA',
+      ko: '[FYI] 추천 후보 명단에 선정되셨습니다 — NEXON DEV VINA QA 게임 테스터',
+      en: "[FYI] You've been nominated — QA Game Tester at NEXON DEV VINA",
+    },
+    desc: '넥슨데브비나 QA 추천 (9/4): 비공개 프레임 — QA Game Tester(V70) 1공고, HCMC 온사이트, QA·Game 직군 룰 선정(CV에 게임 경험 기재 안내 포함). 8/31 unity 기수신자 제외.',
+    source: 'scripts/outreach/ktc0904-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '<b>NEXON DEV VINA</b> — studio phát triển game thuộc NEXON, làm việc trên các dự án game toàn cầu — đang tuyển <b>QA Game Tester</b> qua FYI (UOA Tower, TP.HCM). Lưu ý: hãy mô tả kinh nghiệm chơi game và các tựa game bạn đã chơi ngay trong CV.',
+        ko: 'NEXON 산하 게임 개발 스튜디오 <b>NEXON DEV VINA</b>가 FYI를 통해 <b>QA Game Tester</b>를 채용 중입니다(호치민 UOA Tower). CV에 게임 경험·플레이한 타이틀 기재가 필요합니다.',
+        en: '<b>NEXON DEV VINA</b> — a NEXON game studio working on global titles — is hiring a <b>QA Game Tester</b> via FYI (UOA Tower, HCMC). Note: describe your gaming experience and played titles in your CV.',
+      },
+      initial: 'N', company: 'NEXON DEV VINA', title: 'QA Game Tester', meta: 'Onsite · UOA Tower, TP.HCM', tail: BENEFIT_PRIVATE,
+    }),
+  },
+  {
+    match: /^nexon-recommend1-qa-/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử gửi NEXON DEV VINA — QA Game Tester',
+      ko: '[FYI] NEXON DEV VINA 추천 명단에 선정되셨습니다 — QA 게임 테스터',
+      en: "[FYI] You've been nominated to NEXON DEV VINA — QA Game Tester",
+    },
+    desc: '넥슨데브비나 QA 추천 (9/4): 공개 프레임 — FYI 검토 선정·명단에 프로필 동봉·지원 시 우선 검토. 1그룹(qa).',
+    source: 'scripts/outreach/ktc0904-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '<b>NEXON DEV VINA</b> — studio phát triển game thuộc NEXON — đang tuyển <b>QA Game Tester</b> qua FYI (UOA Tower, TP.HCM). Đội ngũ FYI đã xem xét toàn bộ hồ sơ và <b>chọn bạn vào danh sách đề cử</b> — hồ sơ công khai của bạn sẽ được gửi kèm danh sách cho nhà tuyển dụng trong tuần này.',
+        ko: 'NEXON 산하 게임 개발 스튜디오 <b>NEXON DEV VINA</b>가 FYI를 통해 <b>QA Game Tester</b>를 채용 중입니다. FYI 팀이 이력서 전체를 검토해 회원님을 <b>추천 명단에 선정</b>했으며, 공개 프로필은 이번 주 명단과 함께 담당자에게 전달됩니다.',
+        en: '<b>NEXON DEV VINA</b> — a NEXON game studio — is hiring a <b>QA Game Tester</b> via FYI. The FYI team reviewed all profiles and <b>nominated you</b>; your public profile goes to the recruiter with this week\'s list.',
+      },
+      initial: 'N', company: 'NEXON DEV VINA', title: 'QA Game Tester', meta: 'Onsite · UOA Tower, TP.HCM', tail: BENEFIT_PUBLIC,
+    }),
+  },
+  {
     match: /^nexon-.*-private/,
     subject: {
       vi: '[FYI] Bạn được chọn vào danh sách đề cử — Unity Game Developer (C#) tại NEXON DEV VINA',
@@ -1346,6 +1382,186 @@ export const COLDMAIL_TEMPLATES = [
         en: '<b>DAEHONG COMMUNICATIONS VIETNAM</b> — a Korean integrated advertising & communications company — is hiring an <b>Art Director</b> via FYI. The FYI team reviewed all profiles and <b>nominated you</b>; your public profile goes to the recruiter with this week\'s list. Portfolio required.',
       },
       initial: 'D', company: 'DAEHONG COMMUNICATIONS VIETNAM', title: 'Art Director', meta: 'Onsite · Diamond Plaza, TP.HCM · Portfolio', tail: BENEFIT_PUBLIC,
+    }),
+  },
+  {
+    match: /^luen-.*-private/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử — {{포지션}} tại LUEN',
+      ko: '[FYI] 추천 후보 명단에 선정되셨습니다 — LUEN {{포지션}}',
+      en: "[FYI] You've been nominated — {{position}} at LUEN",
+    },
+    desc: 'LUEN 인턴 추천 (9/4): 비공개 프레임 — AI 숏폼 드라마 콘텐츠 스타트업 인턴 3공고(R145-147: 프로듀서/AI크리에이터/영상편집), 콘텐츠 직군×0-2y 룰 선정, Design→편집·나머지 교차 분배. 3그룹(producer/creator/editor).',
+    source: 'scripts/outreach/ktc0904-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '<b>LUEN</b> — startup nội dung Hàn Quốc sản xuất phim ngắn trên YouTube bằng AI tạo sinh — đang tuyển các vị trí <b>Intern</b> về content qua FYI. Không yêu cầu kinh nghiệm; phù hợp với bạn yêu thích sáng tạo nội dung và AI.',
+        ko: '생성형 AI로 유튜브 숏폼 드라마를 제작하는 한국 콘텐츠 스타트업 <b>LUEN</b>이 FYI를 통해 콘텐츠 <b>인턴</b>을 채용 중입니다. 경력 무관, 콘텐츠·AI에 관심 있는 분 대상.',
+        en: '<b>LUEN</b> — a Korean content startup producing YouTube short-form dramas with generative AI — is hiring content <b>interns</b> via FYI. No experience required.',
+      },
+      initial: 'L', company: 'LUEN', title: '{{공고 제목}}', meta: 'Intern · Trợ cấp 3–4 triệu/tháng', tail: BENEFIT_PRIVATE,
+    }),
+  },
+  {
+    match: /^luen-/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử gửi LUEN — {{포지션}}',
+      ko: '[FYI] LUEN 추천 명단에 선정되셨습니다 — {{포지션}}',
+      en: "[FYI] You've been nominated to LUEN — {{position}}",
+    },
+    desc: 'LUEN 인턴 추천 (9/4): 공개 프레임 — FYI 검토 선정·명단에 프로필 동봉·지원 시 우선 검토. 3그룹(producer/creator/editor).',
+    source: 'scripts/outreach/ktc0904-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '<b>LUEN</b> — startup nội dung Hàn Quốc sản xuất phim ngắn trên YouTube bằng AI tạo sinh — đang tuyển các vị trí <b>Intern</b> về content qua FYI. Đội ngũ FYI đã xem xét toàn bộ hồ sơ và <b>chọn bạn vào danh sách đề cử</b> — hồ sơ công khai của bạn sẽ được gửi kèm danh sách cho nhà tuyển dụng trong tuần này.',
+        ko: '생성형 AI로 유튜브 숏폼 드라마를 제작하는 한국 콘텐츠 스타트업 <b>LUEN</b>이 FYI를 통해 콘텐츠 <b>인턴</b>을 채용 중입니다. FYI 팀이 이력서 전체를 검토해 회원님을 <b>추천 명단에 선정</b>했으며, 공개 프로필은 이번 주 명단과 함께 담당자에게 전달됩니다.',
+        en: '<b>LUEN</b> — a Korean content startup producing YouTube short-form dramas with generative AI — is hiring content <b>interns</b> via FYI. The FYI team reviewed all profiles and <b>nominated you</b>; your public profile goes to the recruiter with this week\'s list.',
+      },
+      initial: 'L', company: 'LUEN', title: '{{공고 제목}}', meta: 'Intern · Trợ cấp 3–4 triệu/tháng', tail: BENEFIT_PUBLIC,
+    }),
+  },
+  {
+    match: /^sunjin-.*-private/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử — {{포지션}} tại Sunjin Vina',
+      ko: '[FYI] 추천 후보 명단에 선정되셨습니다 — Sunjin Vina {{포지션}}',
+      en: "[FYI] You've been nominated — {{position}} at Sunjin Vina",
+    },
+    desc: '선진비나 추천 (9/4): 비공개 프레임 — 한국 축산·사료 기업 HCMC 오피스 8공고(미디어/채용/교육/내부감사/투자연구/구매/데이터리드/가금마케팅), 직군×연차 룰 선정. 8그룹(media/recruit/training/audit/invest/proc/data/mkt).',
+    source: 'scripts/outreach/ktc0904-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '<b>Sunjin Vina</b> — công ty thuộc tập đoàn nông nghiệp – chăn nuôi Sunjin (Hàn Quốc) — đang tuyển nhiều vị trí văn phòng qua FYI, làm việc tại tòa nhà ThiSofic, Mai Chí Thọ, TP.HCM.',
+        ko: '한국 농축산 그룹 선진 계열 <b>Sunjin Vina</b>가 FYI를 통해 호치민 오피스 다수 포지션을 채용 중입니다(ThiSofic 빌딩, Mai Chí Thọ).',
+        en: '<b>Sunjin Vina</b> — part of the Korean agriculture & livestock group Sunjin — is hiring multiple office roles via FYI (ThiSofic Building, Mai Chí Thọ, HCMC).',
+      },
+      initial: 'S', company: 'Sunjin Vina', title: '{{공고 제목}}', meta: 'Onsite · Mai Chí Thọ, TP.HCM', tail: BENEFIT_PRIVATE,
+    }),
+  },
+  {
+    match: /^sunjin-/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử gửi Sunjin Vina — {{포지션}}',
+      ko: '[FYI] Sunjin Vina 추천 명단에 선정되셨습니다 — {{포지션}}',
+      en: "[FYI] You've been nominated to Sunjin Vina — {{position}}",
+    },
+    desc: '선진비나 추천 (9/4): 공개 프레임 — FYI 검토 선정·명단에 프로필 동봉·지원 시 우선 검토. 8그룹(media/recruit/training/audit/invest/proc/data/mkt).',
+    source: 'scripts/outreach/ktc0904-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '<b>Sunjin Vina</b> — công ty thuộc tập đoàn nông nghiệp – chăn nuôi Sunjin (Hàn Quốc) — đang tuyển nhiều vị trí văn phòng qua FYI (ThiSofic, Mai Chí Thọ, TP.HCM). Đội ngũ FYI đã xem xét toàn bộ hồ sơ và <b>chọn bạn vào danh sách đề cử</b> — hồ sơ công khai của bạn sẽ được gửi kèm danh sách cho nhà tuyển dụng trong tuần này.',
+        ko: '한국 농축산 그룹 선진 계열 <b>Sunjin Vina</b>가 FYI를 통해 호치민 오피스 다수 포지션을 채용 중입니다. FYI 팀이 이력서 전체를 검토해 회원님을 <b>추천 명단에 선정</b>했으며, 공개 프로필은 이번 주 명단과 함께 담당자에게 전달됩니다.',
+        en: '<b>Sunjin Vina</b> — part of the Korean agriculture & livestock group Sunjin — is hiring multiple office roles via FYI. The FYI team reviewed all profiles and <b>nominated you</b>; your public profile goes to the recruiter with this week\'s list.',
+      },
+      initial: 'S', company: 'Sunjin Vina', title: '{{공고 제목}}', meta: 'Onsite · Mai Chí Thọ, TP.HCM', tail: BENEFIT_PUBLIC,
+    }),
+  },
+  {
+    match: /^sts-recommend1-sales-private/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử — Sale Thiết Bị Gia Dụng tại STS',
+      ko: '[FYI] 추천 후보 명단에 선정되셨습니다 — STS 가전·설비 세일즈',
+      en: "[FYI] You've been nominated — Home Appliance Sales at STS",
+    },
+    desc: 'STS 세일즈 추천 (9/4 2차): 비공개 프레임 — 가전 세일즈(V63), KTC 회신(기술 아는 세일즈 필요·JD 유지)으로 보류 해제. Sales×HCMC 룰 선정, 기술/B2B 신호 우선, 카피에 HVAC 기술 이해 우대 명시. 1그룹(sales).',
+    source: 'scripts/outreach/ktc0904-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '<b>STS</b> — doanh nghiệp đang tuyển dụng qua FYI, văn phòng tại Quận 7, TP.HCM — đang tuyển <b>Nhân viên Sales Thiết Bị Gia Dụng</b>. Lưu ý: vị trí này <b>ưu tiên ứng viên Sales có hiểu biết kỹ thuật</b> về thiết bị/hệ thống điều hòa (HVAC) — mô tả công việc bao gồm nhiều nội dung kỹ thuật.',
+        ko: '<b>STS</b>가 FYI를 통해 <b>가전·설비 세일즈</b>를 채용 중입니다(호치민 7군). 설비/공조(HVAC) <b>기술 이해가 있는 세일즈 우대</b> — JD에 기술 내용이 다수 포함돼 있음을 명시.',
+        en: '<b>STS</b> is hiring a <b>Home Appliance Sales</b> role via FYI (District 7, HCMC). Note: sales candidates with <b>technical understanding of appliances/HVAC</b> are preferred — the JD includes substantial technical content.',
+      },
+      initial: 'S', company: 'STS', title: 'Sale Thiết Bị Gia Dụng', meta: 'Onsite · Quận 7, TP.HCM · Ưu tiên hiểu biết kỹ thuật', tail: BENEFIT_PRIVATE,
+    }),
+  },
+  {
+    match: /^sts-recommend1-sales-/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử gửi STS — Sale Thiết Bị Gia Dụng',
+      ko: '[FYI] STS 추천 명단에 선정되셨습니다 — 가전·설비 세일즈',
+      en: "[FYI] You've been nominated to STS — Home Appliance Sales",
+    },
+    desc: 'STS 세일즈 추천 (9/4 2차): 공개 프레임 — FYI 검토 선정·명단에 프로필 동봉·지원 시 우선 검토. 1그룹(sales).',
+    source: 'scripts/outreach/ktc0904-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '<b>STS</b> — doanh nghiệp đang tuyển dụng qua FYI (Quận 7, TP.HCM) — đang tuyển <b>Nhân viên Sales Thiết Bị Gia Dụng</b> (ưu tiên hiểu biết kỹ thuật thiết bị/HVAC). Đội ngũ FYI đã xem xét toàn bộ hồ sơ và <b>chọn bạn vào danh sách đề cử</b> — hồ sơ công khai của bạn sẽ được gửi kèm danh sách cho nhà tuyển dụng trong tuần này.',
+        ko: '<b>STS</b>가 FYI를 통해 <b>가전·설비 세일즈</b>(HVAC 기술 이해 우대)를 채용 중입니다. FYI 팀이 이력서 전체를 검토해 회원님을 <b>추천 명단에 선정</b>했으며, 공개 프로필은 이번 주 명단과 함께 담당자에게 전달됩니다.',
+        en: '<b>STS</b> is hiring a <b>Home Appliance Sales</b> role (technical/HVAC understanding preferred) via FYI. The FYI team reviewed all profiles and <b>nominated you</b>; your public profile goes to the recruiter with this week\'s list.',
+      },
+      initial: 'S', company: 'STS', title: 'Sale Thiết Bị Gia Dụng', meta: 'Onsite · Quận 7, TP.HCM · Ưu tiên hiểu biết kỹ thuật', tail: BENEFIT_PUBLIC,
+    }),
+  },
+  {
+    match: /^sts-.*-private/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử — Kế toán Nội bộ tại STS',
+      ko: '[FYI] 추천 후보 명단에 선정되셨습니다 — STS 내부회계',
+      en: "[FYI] You've been nominated — Internal Accountant at STS",
+    },
+    desc: 'STS 추천 (9/4): 비공개 프레임 — 내부회계(V62) 1공고, 호치민 7군 온사이트, Finance×1y+ 룰 선정. 세일즈 공고(V63)는 JD 불일치로 보류. 1그룹(acct).',
+    source: 'scripts/outreach/ktc0904-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '<b>STS</b> — doanh nghiệp đang tuyển dụng qua FYI, văn phòng tại Quận 7, TP.HCM.',
+        ko: '<b>STS</b>가 FYI를 통해 채용 중입니다(호치민 7군 오피스).',
+        en: '<b>STS</b> is hiring via FYI (District 7, HCMC office).',
+      },
+      initial: 'S', company: 'STS', title: 'Kế toán Nội bộ', meta: 'Onsite · Quận 7, TP.HCM', tail: BENEFIT_PRIVATE,
+    }),
+  },
+  {
+    match: /^sts-/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử gửi STS — Kế toán Nội bộ',
+      ko: '[FYI] STS 추천 명단에 선정되셨습니다 — 내부회계',
+      en: "[FYI] You've been nominated to STS — Internal Accountant",
+    },
+    desc: 'STS 추천 (9/4): 공개 프레임 — FYI 검토 선정·명단에 프로필 동봉·지원 시 우선 검토. 1그룹(acct).',
+    source: 'scripts/outreach/ktc0904-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '<b>STS</b> — doanh nghiệp đang tuyển dụng qua FYI, văn phòng tại Quận 7, TP.HCM. Đội ngũ FYI đã xem xét toàn bộ hồ sơ và <b>chọn bạn vào danh sách đề cử</b> — hồ sơ công khai của bạn sẽ được gửi kèm danh sách cho nhà tuyển dụng trong tuần này.',
+        ko: '<b>STS</b>가 FYI를 통해 채용 중입니다(호치민 7군). FYI 팀이 이력서 전체를 검토해 회원님을 <b>추천 명단에 선정</b>했으며, 공개 프로필은 이번 주 명단과 함께 담당자에게 전달됩니다.',
+        en: '<b>STS</b> is hiring via FYI (District 7, HCMC). The FYI team reviewed all profiles and <b>nominated you</b>; your public profile goes to the recruiter with this week\'s list.',
+      },
+      initial: 'S', company: 'STS', title: 'Kế toán Nội bộ', meta: 'Onsite · Quận 7, TP.HCM', tail: BENEFIT_PUBLIC,
+    }),
+  },
+  {
+    match: /^bluestar-.*-private/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử — {{포지션}} tại BlueStar Asia',
+      ko: '[FYI] 추천 후보 명단에 선정되셨습니다 — BlueStar Asia {{포지션}}',
+      en: "[FYI] You've been nominated — {{position}} at BlueStar Asia",
+    },
+    desc: '블루스타아시아 추천 (9/4): 비공개 프레임 — 한국계 급식 F&B 기업 4공고(법인장 어시스턴트/HR/구매/채권회계), 직군×어학인증 룰 선정. 4그룹(assist/hr/proc/acct). 영양사·급식QC는 풀 없음 제외.',
+    source: 'scripts/outreach/ktc0904-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '<b>BlueStar Asia</b> — doanh nghiệp Hàn Quốc trong lĩnh vực dịch vụ suất ăn công nghiệp (F&B) — đang tuyển nhiều vị trí qua FYI, làm việc tại Bình Lợi Trung, TP.HCM.',
+        ko: '한국계 산업 급식·F&B 기업 <b>BlueStar Asia</b>가 FYI를 통해 다수 포지션을 채용 중입니다(호치민 Bình Lợi Trung 온사이트).',
+        en: '<b>BlueStar Asia</b> — a Korean industrial catering (F&B) company — is hiring multiple roles via FYI (Bình Lợi Trung, HCMC).',
+      },
+      initial: 'B', company: 'BlueStar Asia', title: '{{공고 제목}}', meta: 'Onsite · Bình Lợi Trung, TP.HCM', tail: BENEFIT_PRIVATE,
+    }),
+  },
+  {
+    match: /^bluestar-/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử gửi BlueStar Asia — {{포지션}}',
+      ko: '[FYI] BlueStar Asia 추천 명단에 선정되셨습니다 — {{포지션}}',
+      en: "[FYI] You've been nominated to BlueStar Asia — {{position}}",
+    },
+    desc: '블루스타아시아 추천 (9/4): 공개 프레임 — FYI 검토 선정·명단에 프로필 동봉·지원 시 우선 검토. 4그룹(assist/hr/proc/acct).',
+    source: 'scripts/outreach/ktc0904-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '<b>BlueStar Asia</b> — doanh nghiệp Hàn Quốc trong lĩnh vực dịch vụ suất ăn công nghiệp (F&B) — đang tuyển nhiều vị trí qua FYI (Bình Lợi Trung, TP.HCM). Đội ngũ FYI đã xem xét toàn bộ hồ sơ và <b>chọn bạn vào danh sách đề cử</b> — hồ sơ công khai của bạn sẽ được gửi kèm danh sách cho nhà tuyển dụng trong tuần này.',
+        ko: '한국계 산업 급식·F&B 기업 <b>BlueStar Asia</b>가 FYI를 통해 다수 포지션을 채용 중입니다. FYI 팀이 이력서 전체를 검토해 회원님을 <b>추천 명단에 선정</b>했으며, 공개 프로필은 이번 주 명단과 함께 담당자에게 전달됩니다.',
+        en: '<b>BlueStar Asia</b> — a Korean industrial catering (F&B) company — is hiring via FYI. The FYI team reviewed all profiles and <b>nominated you</b>; your public profile goes to the recruiter with this week\'s list.',
+      },
+      initial: 'B', company: 'BlueStar Asia', title: '{{공고 제목}}', meta: 'Onsite · Bình Lợi Trung, TP.HCM', tail: BENEFIT_PUBLIC,
     }),
   },
   {
