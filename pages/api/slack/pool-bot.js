@@ -3,6 +3,7 @@
 // 필요 env: SLACK_POOLBOT_SIGNING_SECRET, SLACK_POOLBOT_BOT_TOKEN(xoxb-)
 // Slack 앱 설정: Event Subscriptions → app_mention, Request URL → 이 엔드포인트.
 import crypto from 'crypto'
+import { waitUntil } from '@vercel/functions'
 import { estimatePool, formatSlackReply } from '../../../lib/poolEstimator.js'
 
 export const config = { api: { bodyParser: false }, maxDuration: 60 }
@@ -64,9 +65,15 @@ export default async function handler(req, res) {
     return res.status(200).end()
   }
 
-  // 3초 룰: 먼저 200 을 보내고 같은 인보케이션에서 마저 처리(Vercel 은 핸들러 종료까지 유지)
+  // 3초 룰: 먼저 200 을 보내되, Vercel 은 응답 직후 함수를 정지시키므로
+  // 나머지 작업은 반드시 waitUntil 로 붙잡아 둬야 실행된다.
   res.status(200).end()
+  waitUntil(processMention(event))
+}
+
+async function processMention(event) {
   const threadTs = event.thread_ts || event.ts
+  console.log('[pool-bot] mention received', event.channel, event.ts)
   try {
     const jd = await resolveJdText(event)
     if (jd.length < 40) {
@@ -80,6 +87,7 @@ export default async function handler(req, res) {
     await slackApi('chat.postMessage', {
       channel: event.channel, thread_ts: threadTs, text: formatSlackReply(result),
     })
+    console.log('[pool-bot] replied', event.channel, threadTs)
   } catch (e) {
     console.error('[pool-bot]', e)
     await slackApi('chat.postMessage', {
