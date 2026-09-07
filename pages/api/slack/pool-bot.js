@@ -36,11 +36,17 @@ const slackApi = (method, payload) =>
     body: JSON.stringify(payload),
   }).then((r) => r.json())
 
+// 읽기 메서드(conversations.*)는 JSON body 를 받지 않는다 — 쿼리스트링 GET 필수
+const slackGet = (method, params) =>
+  fetch(`https://slack.com/api/${method}?${new URLSearchParams(params)}`, {
+    headers: { Authorization: `Bearer ${process.env.SLACK_POOLBOT_BOT_TOKEN}` },
+  }).then((r) => r.json())
+
 // 멘션이 스레드 댓글에만 있으면 JD 는 원글에 있다 — 원글 텍스트를 가져와 합친다.
 async function resolveJdText(event) {
   let text = String(event.text || '').replace(/<@[A-Z0-9]+>/g, ' ').trim()
   if (text.length < 80 && event.thread_ts && event.thread_ts !== event.ts) {
-    const res = await slackApi('conversations.replies', {
+    const res = await slackGet('conversations.replies', {
       channel: event.channel, ts: event.thread_ts, limit: 1,
     })
     const parent = res?.messages?.[0]?.text
