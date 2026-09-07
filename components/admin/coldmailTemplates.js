@@ -1385,7 +1385,7 @@ export const COLDMAIL_TEMPLATES = [
     }),
   },
   {
-    match: /^s2e-recommend1-.*-private/,
+    match: /^s2e-recommend\d-.*-private/,
     subject: {
       vi: '[FYI] Bạn được chọn vào danh sách đề cử — Cộng tác viên phát triển đối tác tại s2e',
       ko: '[FYI] 추천 후보 명단에 선정되셨습니다 — s2e 파트너 개발 협력자',
@@ -1403,7 +1403,7 @@ export const COLDMAIL_TEMPLATES = [
     }),
   },
   {
-    match: /^s2e-recommend1-/,
+    match: /^s2e-recommend\d-/,
     subject: {
       vi: '[FYI] Bạn được chọn vào danh sách đề cử gửi s2e — Cộng tác viên phát triển đối tác',
       ko: '[FYI] s2e 추천 명단에 선정되셨습니다 — 파트너 개발 협력자',
@@ -1637,7 +1637,7 @@ export const COLDMAIL_TEMPLATES = [
     }),
   },
   {
-    match: /^sts-recommend1-sales-private/,
+    match: /^sts-recommend\d-sales-private/,
     subject: {
       vi: '[FYI] Bạn được chọn vào danh sách đề cử — Sale Thiết Bị Gia Dụng tại STS',
       ko: '[FYI] 추천 후보 명단에 선정되셨습니다 — STS 가전·설비 세일즈',
@@ -1655,7 +1655,7 @@ export const COLDMAIL_TEMPLATES = [
     }),
   },
   {
-    match: /^sts-recommend1-sales-/,
+    match: /^sts-recommend\d-sales-/,
     subject: {
       vi: '[FYI] Bạn được chọn vào danh sách đề cử gửi STS — Sale Thiết Bị Gia Dụng',
       ko: '[FYI] STS 추천 명단에 선정되셨습니다 — 가전·설비 세일즈',
@@ -1715,7 +1715,7 @@ export const COLDMAIL_TEMPLATES = [
       ko: '[FYI] 추천 후보 명단에 선정되셨습니다 — BlueStar Asia {{포지션}}',
       en: "[FYI] You've been nominated — {{position}} at BlueStar Asia",
     },
-    desc: '블루스타아시아 추천 (9/4): 비공개 프레임 — 한국계 급식 F&B 기업 4공고(법인장 어시스턴트/HR/구매/채권회계), 직군×어학인증 룰 선정. 4그룹(assist/hr/proc/acct). 영양사·급식QC는 풀 없음 제외.',
+    desc: '블루스타아시아 추천 (9/4·9/7): 비공개 프레임 — 한국계 급식 F&B 기업, 직군×어학인증 룰 선정. 그룹 assist/hr/proc/acct + 9/7 qaqc(제조 QC 신호) 추가. 영양사는 풀 없음 제외.',
     source: 'scripts/outreach/ktc0904-recommend-coldmail.mjs',
     html: (lang) => recommendShell(lang, {
       intro: {
@@ -1733,7 +1733,7 @@ export const COLDMAIL_TEMPLATES = [
       ko: '[FYI] BlueStar Asia 추천 명단에 선정되셨습니다 — {{포지션}}',
       en: "[FYI] You've been nominated to BlueStar Asia — {{position}}",
     },
-    desc: '블루스타아시아 추천 (9/4): 공개 프레임 — FYI 검토 선정·명단에 프로필 동봉·지원 시 우선 검토. 4그룹(assist/hr/proc/acct).',
+    desc: '블루스타아시아 추천 (9/4·9/7): 공개 프레임 — FYI 검토 선정·명단에 프로필 동봉·지원 시 우선 검토. 그룹 assist/hr/proc/acct + 9/7 qaqc.',
     source: 'scripts/outreach/ktc0904-recommend-coldmail.mjs',
     html: (lang) => recommendShell(lang, {
       intro: {
