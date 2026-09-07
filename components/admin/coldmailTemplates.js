@@ -2380,6 +2380,114 @@ export const COLDMAIL_TEMPLATES = [
     }),
   },
   {
+    match: /^ufeed-recommend1-.*-private/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử — Network & Security Engineer tại Ufeed',
+      ko: '[FYI] 추천 후보 명단에 선정되셨습니다 — Ufeed 네트워크·보안 엔지니어',
+      en: "[FYI] You've been nominated — Network & Security Engineer at Ufeed",
+    },
+    desc: '유피드 넷섹 추천 (9/7): 비공개 프레임 — 선박 사이버보안(IACS UR E26), 한국 직접채용·비자/숙소 지원. 룰=넷섹 직군 or 인접(SysAdmin/DevOps/SRE/Cloud)×넷섹스킬, 3y+ 필수. 풀 12명(한국어 인증 0명 실측→우대 가점만).',
+    source: 'scripts/outreach/ktc0907b-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '<b>Ufeed</b> — công ty Hàn Quốc trong lĩnh vực an ninh mạng cho tàu biển (chứng nhận IACS UR E26) — đang tuyển <b>Network &amp; Security Engineer</b> (kinh nghiệm 3 năm trở lên) làm việc trực tiếp tại <b>Hàn Quốc</b> qua FYI: lương theo mặt bằng Hàn Quốc, hỗ trợ visa và chỗ ở. Tiếng Hàn/tiếng Anh là lợi thế, không bắt buộc.',
+        ko: '선박 사이버보안(IACS UR E26 인증) 분야 한국 기업 <b>Ufeed</b>가 FYI를 통해 <b>네트워크·보안 엔지니어</b>(경력 3년+)를 채용 중입니다 — 한국 직접채용, 한국 수준 급여, 비자·숙소 지원.',
+        en: '<b>Ufeed</b> — a Korean company in maritime cybersecurity (IACS UR E26) — is hiring a <b>Network & Security Engineer</b> (3+ yrs) to work in <b>Korea</b> via FYI: Korean-level pay, visa & housing support.',
+      },
+      initial: 'U', company: 'Ufeed', title: 'Network & Security Engineer', meta: 'Làm việc tại Hàn Quốc · Hỗ trợ visa & chỗ ở', tail: BENEFIT_PRIVATE,
+    }),
+  },
+  {
+    match: /^ufeed-recommend1-/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử gửi Ufeed — Network & Security Engineer',
+      ko: '[FYI] Ufeed 추천 명단에 선정되셨습니다 — 네트워크·보안 엔지니어',
+      en: "[FYI] You've been nominated to Ufeed — Network & Security Engineer",
+    },
+    desc: '유피드 넷섹 추천 (9/7): 공개 프레임 — FYI 검토 선정·명단에 프로필 동봉·지원 시 우선 검토.',
+    source: 'scripts/outreach/ktc0907b-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '<b>Ufeed</b> — công ty Hàn Quốc trong lĩnh vực an ninh mạng cho tàu biển (IACS UR E26) — đang tuyển <b>Network &amp; Security Engineer</b> (3+ năm) làm việc tại <b>Hàn Quốc</b> qua FYI (hỗ trợ visa &amp; chỗ ở). Đội ngũ FYI đã xem xét toàn bộ hồ sơ và <b>chọn bạn vào danh sách đề cử</b> — hồ sơ công khai của bạn sẽ được gửi kèm danh sách cho nhà tuyển dụng trong tuần này.',
+        ko: '선박 사이버보안 한국 기업 <b>Ufeed</b>가 FYI를 통해 <b>네트워크·보안 엔지니어</b>를 채용 중입니다(한국 근무, 비자·숙소 지원). FYI 팀이 이력서 전체를 검토해 회원님을 <b>추천 명단에 선정</b>했습니다.',
+        en: '<b>Ufeed</b> — Korean maritime-cybersecurity company — is hiring via FYI (work in Korea, visa & housing). The FYI team reviewed all profiles and <b>nominated you</b>.',
+      },
+      initial: 'U', company: 'Ufeed', title: 'Network & Security Engineer', meta: 'Làm việc tại Hàn Quốc · Hỗ trợ visa & chỗ ở', tail: BENEFIT_PUBLIC,
+    }),
+  },
+  {
+    match: /^robowink-recommend1-.*-private/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử — AI/ML Engineer tại Robowink',
+      ko: '[FYI] 추천 후보 명단에 선정되셨습니다 — Robowink AI·ML 엔지니어',
+      en: "[FYI] You've been nominated — AI/ML Engineer at Robowink",
+    },
+    desc: '로보윙크 AI/ML 추천 (9/7): 비공개 프레임 — 드론·로봇 AI비전, 다낭 온사이트, ASAP 채용. 룰=AI/ML/DS 코어 → Data직군×Python → 타직군 비전+Python 캐스케이드, 다낭 가점. 풀 167명.',
+    source: 'scripts/outreach/ktc0907b-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '<b>Robowink</b> — công ty Hàn Quốc phát triển giải pháp AI vision cho drone &amp; robot — đang tuyển <b>AI/ML Engineer</b> qua FYI, làm việc tại Đà Nẵng. Cần nền tảng Python và hiểu biết cơ bản về AI/computer vision; tiếng Anh là lợi thế, không bắt buộc. Công ty mong muốn tuyển <b>càng sớm càng tốt</b>.',
+        ko: '드론·로봇용 AI 비전 솔루션을 만드는 한국 기업 <b>Robowink</b>가 FYI를 통해 <b>AI/ML 엔지니어</b>를 채용 중입니다(다낭 온사이트, Python·컴퓨터비전 기초, ASAP 채용 희망).',
+        en: '<b>Robowink</b> — a Korean company building AI vision for drones & robots — is hiring an <b>AI/ML Engineer</b> via FYI (onsite Đà Nẵng, Python & CV basics, hiring ASAP).',
+      },
+      initial: 'R', company: 'Robowink', title: 'AI/ML Engineer', meta: 'Onsite · Đà Nẵng', tail: BENEFIT_PRIVATE,
+    }),
+  },
+  {
+    match: /^robowink-recommend1-/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử gửi Robowink — AI/ML Engineer',
+      ko: '[FYI] Robowink 추천 명단에 선정되셨습니다 — AI·ML 엔지니어',
+      en: "[FYI] You've been nominated to Robowink — AI/ML Engineer",
+    },
+    desc: '로보윙크 AI/ML 추천 (9/7): 공개 프레임 — FYI 검토 선정·명단에 프로필 동봉·지원 시 우선 검토.',
+    source: 'scripts/outreach/ktc0907b-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '<b>Robowink</b> — công ty Hàn Quốc phát triển giải pháp AI vision cho drone &amp; robot — đang tuyển <b>AI/ML Engineer</b> qua FYI, làm việc tại Đà Nẵng. Đội ngũ FYI đã xem xét toàn bộ hồ sơ và <b>chọn bạn vào danh sách đề cử</b> — hồ sơ công khai của bạn sẽ được gửi kèm danh sách cho nhà tuyển dụng trong tuần này.',
+        ko: '드론·로봇용 AI 비전 한국 기업 <b>Robowink</b>가 FYI를 통해 <b>AI/ML 엔지니어</b>를 채용 중입니다(다낭). FYI 팀이 이력서 전체를 검토해 회원님을 <b>추천 명단에 선정</b>했습니다.',
+        en: '<b>Robowink</b> — Korean AI-vision company for drones & robots — is hiring via FYI (Đà Nẵng). The FYI team reviewed all profiles and <b>nominated you</b>.',
+      },
+      initial: 'R', company: 'Robowink', title: 'AI/ML Engineer', meta: 'Onsite · Đà Nẵng', tail: BENEFIT_PUBLIC,
+    }),
+  },
+  {
+    match: /^bannerting-recommend1-.*-private/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử — Thực tập sinh Marketing tại Bannerting',
+      ko: '[FYI] 추천 후보 명단에 선정되셨습니다 — Bannerting 마케팅 인턴',
+      en: "[FYI] You've been nominated — Marketing Intern at Bannerting",
+    },
+    desc: '배너팅(언틸) 마케팅 인턴 추천 (9/7): 비공개 프레임 — 현수막/배너 광고 서비스, 한·영·베 3개국어 필수, 하노이 선호(HCM/다낭 가능). 룰=한국어 신호×영어 인증×Design/Marketing 직군, 저연차 가점. 풀 34명.',
+    source: 'scripts/outreach/ktc0907b-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '<b>Bannerting</b> — dịch vụ quảng cáo băng rôn/biển hiệu của công ty Hàn Quốc — đang tuyển <b>Thực tập sinh Marketing</b> qua FYI (ưu tiên Hà Nội, chấp nhận TP.HCM/Đà Nẵng). Yêu cầu sử dụng được <b>tiếng Hàn, tiếng Anh và tiếng Việt</b>.',
+        ko: '현수막·배너 광고 서비스 한국 기업 <b>Bannerting</b>이 FYI를 통해 <b>마케팅 인턴</b>을 채용 중입니다(하노이 선호·HCM/다낭 가능, 한·영·베 3개국어 필수).',
+        en: '<b>Bannerting</b> — a Korean banner-advertising service — is hiring a <b>Marketing Intern</b> via FYI (Hanoi preferred; HCMC/Đà Nẵng OK; Korean, English & Vietnamese required).',
+      },
+      initial: 'B', company: 'Bannerting', title: 'Marketing Intern', meta: 'Hà Nội / TP.HCM / Đà Nẵng · Thực tập sinh', tail: BENEFIT_PRIVATE,
+    }),
+  },
+  {
+    match: /^bannerting-recommend1-/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử gửi Bannerting — Thực tập sinh Marketing',
+      ko: '[FYI] Bannerting 추천 명단에 선정되셨습니다 — 마케팅 인턴',
+      en: "[FYI] You've been nominated to Bannerting — Marketing Intern",
+    },
+    desc: '배너팅(언틸) 마케팅 인턴 추천 (9/7): 공개 프레임 — FYI 검토 선정·명단에 프로필 동봉·지원 시 우선 검토.',
+    source: 'scripts/outreach/ktc0907b-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '<b>Bannerting</b> — dịch vụ quảng cáo băng rôn/biển hiệu của công ty Hàn Quốc — đang tuyển <b>Thực tập sinh Marketing</b> qua FYI (ưu tiên Hà Nội, chấp nhận TP.HCM/Đà Nẵng; yêu cầu tiếng Hàn, tiếng Anh, tiếng Việt). Đội ngũ FYI đã xem xét toàn bộ hồ sơ và <b>chọn bạn vào danh sách đề cử</b> — hồ sơ công khai của bạn sẽ được gửi kèm danh sách cho nhà tuyển dụng trong tuần này.',
+        ko: '현수막·배너 광고 한국 기업 <b>Bannerting</b>이 FYI를 통해 <b>마케팅 인턴</b>을 채용 중입니다. FYI 팀이 이력서 전체를 검토해 회원님을 <b>추천 명단에 선정</b>했습니다.',
+        en: '<b>Bannerting</b> — Korean banner-advertising service — is hiring a Marketing Intern via FYI. The FYI team reviewed all profiles and <b>nominated you</b>.',
+      },
+      initial: 'B', company: 'Bannerting', title: 'Marketing Intern', meta: 'Hà Nội / TP.HCM / Đà Nẵng · Thực tập sinh', tail: BENEFIT_PUBLIC,
+    }),
+  },
+  {
     match: /^resume-register-bonus/,
     subject: {
       vi: '{{name}} ơi, bạn chưa đủ điều kiện nhận thưởng 1.000.000₫',
