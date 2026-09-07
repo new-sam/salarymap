@@ -74,25 +74,26 @@ export default async function handler(req, res) {
 async function processMention(event) {
   const threadTs = event.thread_ts || event.ts
   console.log('[pool-bot] mention received', event.channel, event.ts)
+  // 진행 표시를 즉시 달고, 끝나면 그 댓글을 결과로 덮어쓴다 — 무응답이면
+  // 실패인지 집계 중인지 구분이 안 된다는 피드백.
+  const ack = await slackApi('chat.postMessage', {
+    channel: event.channel, thread_ts: threadTs,
+    text: ':mag: 인재풀 집계 중이에요… (30초 정도 걸립니다)',
+  }).catch(() => null)
+  const finish = (text) => ack?.ok
+    ? slackApi('chat.update', { channel: event.channel, ts: ack.ts, text })
+    : slackApi('chat.postMessage', { channel: event.channel, thread_ts: threadTs, text })
   try {
     const jd = await resolveJdText(event)
     if (jd.length < 40) {
-      await slackApi('chat.postMessage', {
-        channel: event.channel, thread_ts: threadTs,
-        text: 'JD 텍스트를 찾지 못했어요. JD 가 있는 글(또는 그 스레드)에서 멘션해 주세요.',
-      })
+      await finish('JD 텍스트를 찾지 못했어요. JD 가 있는 글(또는 그 스레드)에서 멘션해 주세요.')
       return
     }
     const result = await estimatePool(jd)
-    await slackApi('chat.postMessage', {
-      channel: event.channel, thread_ts: threadTs, text: formatSlackReply(result),
-    })
+    await finish(formatSlackReply(result))
     console.log('[pool-bot] replied', event.channel, threadTs)
   } catch (e) {
     console.error('[pool-bot]', e)
-    await slackApi('chat.postMessage', {
-      channel: event.channel, thread_ts: threadTs,
-      text: `풀 집계 중 오류가 났어요: ${e.message}`,
-    }).catch(() => {})
+    await finish(`풀 집계 중 오류가 났어요: ${e.message}`).catch(() => {})
   }
 }
