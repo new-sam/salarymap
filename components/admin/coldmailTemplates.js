@@ -2416,7 +2416,7 @@ export const COLDMAIL_TEMPLATES = [
     }),
   },
   {
-    match: /^robowink-recommend1-.*-private/,
+    match: /^robowink-.*-private/,
     subject: {
       vi: '[FYI] Bạn được chọn vào danh sách đề cử — AI/ML Engineer tại Robowink',
       ko: '[FYI] 추천 후보 명단에 선정되셨습니다 — Robowink AI·ML 엔지니어',
@@ -2434,7 +2434,7 @@ export const COLDMAIL_TEMPLATES = [
     }),
   },
   {
-    match: /^robowink-recommend1-/,
+    match: /^robowink-/,
     subject: {
       vi: '[FYI] Bạn được chọn vào danh sách đề cử gửi Robowink — AI/ML Engineer',
       ko: '[FYI] Robowink 추천 명단에 선정되셨습니다 — AI·ML 엔지니어',
@@ -2452,7 +2452,7 @@ export const COLDMAIL_TEMPLATES = [
     }),
   },
   {
-    match: /^bannerting-recommend1-.*-private/,
+    match: /^bannerting-.*-private/,
     subject: {
       vi: '[FYI] Bạn được chọn vào danh sách đề cử — Thực tập sinh Marketing tại Bannerting',
       ko: '[FYI] 추천 후보 명단에 선정되셨습니다 — Bannerting 마케팅 인턴',
@@ -2470,7 +2470,7 @@ export const COLDMAIL_TEMPLATES = [
     }),
   },
   {
-    match: /^bannerting-recommend1-/,
+    match: /^bannerting-/,
     subject: {
       vi: '[FYI] Bạn được chọn vào danh sách đề cử gửi Bannerting — Thực tập sinh Marketing',
       ko: '[FYI] Bannerting 추천 명단에 선정되셨습니다 — 마케팅 인턴',

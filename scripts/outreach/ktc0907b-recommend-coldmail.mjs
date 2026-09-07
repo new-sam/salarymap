@@ -45,6 +45,8 @@ const NETADJ = ['SysAdmin', 'DevOps', 'SRE', 'Cloud']
 const netsecRe = /(ccna|ccnp|ccie|firewall|fortinet|palo alto|pfsense|vlan|tcp\/ip|tcpip|\brouting\b|ospf|\bbgp\b|mikrotik|cisco|network security|an ninh mạng|quản trị mạng|cissp|oscp|iec 62443|penetration|pentest|siem|wireshark)/i
 const MKT = ['Design', 'Marketing', 'UX Researcher']
 const koSignal = (p) => !!p.korean_cert || /(korean|tiếng hàn|topik|한국어)/i.test(txt(p))
+const DEV = ['Backend', 'Frontend', 'Fullstack', 'Mobile', 'Web', 'Embedded', 'Game', 'DevOps', 'QA', 'QA Automation', 'AI/Data']
+const aiWeakRe = /(machine learning|deep learning|data science|scikit|sklearn|kaggle|pandas|numpy|\bnlp\b|\bllm\b)/i
 
 // 캐스케이드 순서 = 배정 우선순위(요건 좁은 순), 1인 1그룹.
 const GROUPS = [
@@ -73,6 +75,26 @@ const GROUPS = [
       if (vision && py) return (inDanang(p) ? 2 : 0)
       return null
     },
+  },
+  // ── 2차 확장(9/7 당일 저녁, 신규 수신자 recommend2 — 유저 지시): 1차 지원 반응 확인 후 잔여 풀 확장 ──
+  {
+    // 로보윙크 룰 완화: 1차 미해당 개발직군 × Python × AI 약신호(ML/pandas 등) — 9/7 실측 13명.
+    // Python만 걸면 317명이지만 JD 자격(AI·비전 기초) 미달 살포라 제외.
+    gkey: 'aiml2', brand: 'robowink', jobKey: 'RW1', camp: 'robowink-recommend2-aiml',
+    label: { vi: 'AI/ML Engineer', ko: 'AI·ML 엔지니어(확장)' },
+    pick: (p) => {
+      const t = txt(p)
+      const orig = hasAny(p, AI_CORE) || (hasAny(p, DATA_EXT) && pyRe.test(t)) || (visionRe.test(t) && pyRe.test(t))
+      if (orig) return null // 1차 룰 해당자는 recommend1 소관
+      return hasAny(p, DEV) && pyRe.test(t) && aiWeakRe.test(t) ? (inDanang(p) ? 2 : 0) : null
+    },
+  },
+  {
+    // 배너팅 확장: 직군 무관 한+영(1차의 Design/Marketing 제외 잔여) — 9/7 실측 65명.
+    gkey: 'mkt2', brand: 'bannerting', jobKey: 'BT1', camp: 'bannerting-recommend2-mkt',
+    label: { vi: 'Thực tập sinh Marketing', ko: '마케팅 인턴(확장)' },
+    pick: (p) => (koSignal(p) && p.english_cert && !hasAny(p, MKT)
+      ? (inHanoi(p) ? 2 : 0) + (y(p) <= 36 ? 1 : 0) : null),
   },
 ]
 
