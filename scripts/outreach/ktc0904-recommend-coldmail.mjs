@@ -341,7 +341,7 @@ async function main() {
   }
 
   let targets = assigned
-  if (onlyGroup) targets = targets.filter((r) => r.gkey === onlyGroup)
+  if (onlyGroup) targets = targets.filter((r) => onlyGroup.split(',').includes(r.gkey))
   if (maxN) targets = targets.slice(0, maxN)
   let ok = 0, fail = 0
   for (const { p, frame, brand: bk, copyKey, gkey, jobKey, label } of targets) {
