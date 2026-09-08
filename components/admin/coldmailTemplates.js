@@ -2488,6 +2488,42 @@ export const COLDMAIL_TEMPLATES = [
     }),
   },
   {
+    match: /^vnib-.*-private/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử — Event Marketing Specialist tại VNIB TECH',
+      ko: '[FYI] 추천 후보 명단에 선정되셨습니다 — VNIB TECH 이벤트 마케팅',
+      en: "[FYI] You've been nominated — Event Marketing Specialist at VNIB TECH",
+    },
+    desc: 'VNIB TECH 이벤트 마케팅 추천 (9/8): 비공개 프레임 — Camon Social 앱 커뮤니티/이벤트, HCMC Q3 온사이트, 2-4y·영어 필수·영문CV+포트폴리오·뷰티 우대. 룰=Marketing×HCMC×2y+×영어(evtmkt) + 비MKT·비개발×이벤트시그널 확장(evtmkt2). 풀 63명.',
+    source: 'scripts/outreach/vnib-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '<b>VNIB TECH</b> — công ty đứng sau app cộng đồng <b>Camon Social</b> — đang tuyển <b>Event Marketing Specialist</b> qua FYI, làm việc tại TP.HCM (tòa nhà Toong, Quận 3). Yêu cầu 2–4 năm kinh nghiệm Community/Event/Influencer Marketing, giao tiếp tiếng Anh tốt; ưu tiên kinh nghiệm event ngành mỹ phẩm/beauty. Lưu ý: cần <b>CV bằng tiếng Anh</b> (kèm link portfolio).',
+        ko: '커뮤니티 앱 <b>Camon Social</b>을 운영하는 <b>VNIB TECH</b>가 FYI를 통해 <b>이벤트 마케팅 스페셜리스트</b>를 채용 중입니다(HCMC 3군 온사이트, 2–4년·영어 필수·영문 CV+포트폴리오, 뷰티 이벤트 우대).',
+        en: '<b>VNIB TECH</b> — the company behind the <b>Camon Social</b> community app — is hiring an <b>Event Marketing Specialist</b> via FYI (onsite HCMC D3, 2–4 yrs, English required, English CV + portfolio, beauty-event experience a plus).',
+      },
+      initial: 'V', company: 'VNIB TECH', title: 'Event Marketing Specialist', meta: 'Onsite · TP.HCM (Quận 3) · 2–4 năm', tail: BENEFIT_PRIVATE,
+    }),
+  },
+  {
+    match: /^vnib-/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử gửi VNIB TECH — Event Marketing Specialist',
+      ko: '[FYI] VNIB TECH 추천 명단에 선정되셨습니다 — 이벤트 마케팅',
+      en: "[FYI] You've been nominated to VNIB TECH — Event Marketing Specialist",
+    },
+    desc: 'VNIB TECH 이벤트 마케팅 추천 (9/8): 공개 프레임 — FYI 검토 선정·명단에 프로필 동봉·지원 시 우선 검토.',
+    source: 'scripts/outreach/vnib-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '<b>VNIB TECH</b> — công ty đứng sau app cộng đồng <b>Camon Social</b> — đang tuyển <b>Event Marketing Specialist</b> qua FYI, làm việc tại TP.HCM (Quận 3). Đội ngũ FYI đã xem xét toàn bộ hồ sơ và <b>chọn bạn vào danh sách đề cử</b> — hồ sơ công khai của bạn sẽ được gửi kèm danh sách cho nhà tuyển dụng trong tuần này.',
+        ko: '커뮤니티 앱 <b>Camon Social</b>을 운영하는 <b>VNIB TECH</b>가 FYI를 통해 <b>이벤트 마케팅 스페셜리스트</b>를 채용 중입니다(HCMC 3군). FYI 팀이 이력서 전체를 검토해 회원님을 <b>추천 명단에 선정</b>했습니다.',
+        en: '<b>VNIB TECH</b> — the company behind the Camon Social community app — is hiring an Event Marketing Specialist via FYI (HCMC D3). The FYI team reviewed all profiles and <b>nominated you</b>.',
+      },
+      initial: 'V', company: 'VNIB TECH', title: 'Event Marketing Specialist', meta: 'Onsite · TP.HCM (Quận 3) · 2–4 năm', tail: BENEFIT_PUBLIC,
+    }),
+  },
+  {
     match: /^resume-register-bonus/,
     subject: {
       vi: '{{name}} ơi, bạn chưa đủ điều kiện nhận thưởng 1.000.000₫',
