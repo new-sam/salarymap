@@ -2524,6 +2524,42 @@ export const COLDMAIL_TEMPLATES = [
     }),
   },
   {
+    match: /^hivelab-.*-private/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử — {{포지션}} tại HIVELAB',
+      ko: '[FYI] 추천 후보 명단에 선정되셨습니다 — HIVELAB {{포지션}}',
+      en: "[FYI] You've been nominated — {{position}} at HIVELAB",
+    },
+    desc: 'HIVELAB 4공고 추천 (9/8): 비공개 프레임 — 한국 디지털 미디어 에이전시(2012~, UX/UI·게임·웹모바일·브랜딩), 하노이 Taisei Square, 14개월치 연봉 패키지. 4그룹 코어만(admin=TOPIK5+ 14 / bd=Sales×영·한 9 / motion=AE시그널 20 / gfx=Design 3y+ 30, gfx는 Aepick 뷰티 브랜드). 그룹별 요건 한 줄이 인트로에 갈림.',
+    source: 'scripts/outreach/hivelab-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '<b>HIVELAB</b> — agency truyền thông số đa nền tảng của Hàn Quốc (thành lập 2012: UX/UI, game, web/mobile, branding &amp; marketing) — đang tuyển qua FYI, làm việc tại Hà Nội (tòa nhà Taisei Square, Khuất Duy Tiến). Đãi ngộ tương đương 14 tháng lương/năm. {{그룹별 포지션·요건 한 줄}}',
+        ko: '한국 디지털 미디어 에이전시 <b>HIVELAB</b>(2012년 설립, UX/UI·게임·웹모바일·브랜딩)이 FYI를 통해 하노이 오피스(Taisei Square) 4개 포지션을 채용 중입니다(연 14개월치 급여 패키지). {{그룹별 포지션·요건 한 줄}}',
+        en: '<b>HIVELAB</b> — a Korean multi-platform digital media agency (est. 2012: UX/UI, game, web/mobile, branding) — is hiring in Hanoi (Taisei Square) via FYI, ~14 months of salary per year. {{per-group position & requirements line}}',
+      },
+      initial: 'H', company: 'HIVELAB', title: '{{공고 제목}}', meta: 'Onsite · Hà Nội', tail: BENEFIT_PRIVATE,
+    }),
+  },
+  {
+    match: /^hivelab-/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử gửi HIVELAB — {{포지션}}',
+      ko: '[FYI] HIVELAB 추천 명단에 선정되셨습니다 — {{포지션}}',
+      en: "[FYI] You've been nominated to HIVELAB — {{position}}",
+    },
+    desc: 'HIVELAB 4공고 추천 (9/8): 공개 프레임 — FYI 검토 선정·명단에 프로필 동봉·지원 시 우선 검토. 4그룹(admin/bd/motion/gfx).',
+    source: 'scripts/outreach/hivelab-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '<b>HIVELAB</b> — agency truyền thông số đa nền tảng của Hàn Quốc (2012~) — đang tuyển qua FYI tại Hà Nội (Taisei Square). {{그룹별 포지션·요건 한 줄}} Đội ngũ FYI đã xem xét toàn bộ hồ sơ và <b>chọn bạn vào danh sách đề cử</b> — hồ sơ công khai của bạn sẽ được gửi kèm danh sách cho nhà tuyển dụng trong tuần này.',
+        ko: '한국 디지털 미디어 에이전시 <b>HIVELAB</b>이 FYI를 통해 하노이 4개 포지션을 채용 중입니다. FYI 팀이 이력서 전체를 검토해 회원님을 <b>추천 명단에 선정</b>했으며, 공개 프로필은 이번 주 명단과 함께 담당자에게 전달됩니다.',
+        en: '<b>HIVELAB</b> — a Korean digital media agency — is hiring 4 roles in Hanoi via FYI. The FYI team reviewed all profiles and <b>nominated you</b>; your public profile goes to the recruiter with this week\'s list.',
+      },
+      initial: 'H', company: 'HIVELAB', title: '{{공고 제목}}', meta: 'Onsite · Hà Nội', tail: BENEFIT_PUBLIC,
+    }),
+  },
+  {
     match: /^resume-register-bonus/,
     subject: {
       vi: '{{name}} ơi, bạn chưa đủ điều kiện nhận thưởng 1.000.000₫',
