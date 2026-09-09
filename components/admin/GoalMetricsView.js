@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { Fragment, useState, useEffect, useCallback } from 'react'
 import MetricChart from '../DashboardCharts'
 import { templateFor, localizeTemplate, DRAFT_CAMPAIGNS } from './coldmailTemplates'
 import { ROLE_GROUPS } from '../../constants/jobs'
@@ -862,6 +862,10 @@ const CAMPAIGN_GROUPS = [
 // 그룹이 정한 소스에서 전환 인원을 꺼낸다(공개전환 = converted / 추천 = 지원자 수).
 const convertedOf = (c, g) => (g.convertFrom === 'apply' ? c.appliers : c.converted)
 
+// recommend 캠페인명 규약: {회사}-recommend{N}-{직군}-{public|private}.
+// public/private 는 같은 발송 건의 프레임 분기(1인1통·상호배타)라 병합 합산이 안전하다.
+const stemOf = (name) => name.replace(/-(public|private)$/, '')
+
 function ColdmailPublicTab({ data, loading, error, ko, lang }) {
   const [mailPreview, setMailPreview] = useState(null) // { campaign, tpl } — 캠페인명 클릭 시 발송 메일 양식 모달
   // 토글 언어로 subject/html 해석 — vi=발송 원문, ko/en=열람용 번역본.
@@ -884,6 +888,12 @@ function ColdmailPublicTab({ data, loading, error, ko, lang }) {
           .filter((d) => d.group === g.key && !data.campaigns.some((c) => c.campaign === d.campaign))
           .map((d) => ({ campaign: d.campaign, group: d.group, sent: 0, clicked: 0, converted: 0, clickRate: 0, convertRate: 0, applies: 0, appliers: 0, firstSentDay: null, lastSentDay: null, draft: true }))
         if (!rows.length && !drafts.length) return null
+        // recommend 는 캠페인 버킷이 200개+ 라 평면 표로는 못 읽는다 — 발송일 접기 + 프레임 짝 병합.
+        if (g.key === 'recommend') {
+          return <RecommendGroupSection key={g.key} g={g} rows={rows} drafts={drafts} ko={ko}
+            pct={pct} th={th} td={td} num={num}
+            onPreview={(campaign, tpl) => setMailPreview({ campaign, tpl })} />
+        }
         // 소계는 캠페인별 비율의 평균이 아니라 합계끼리 나눈다 — 발송량이 다른 캠페인을 섞어야 해서.
         const sum = rows.reduce((a, c) => ({
           sent: a.sent + c.sent, clicked: a.clicked + c.clicked,
@@ -1009,6 +1019,148 @@ function ColdmailPublicTab({ data, loading, error, ko, lang }) {
           </div>
         </>
       )}
+    </div>
+  )
+}
+
+// recommend 그룹 전용 계층 표 — 발송일 섹션(최신 위·소계 헤더행) → public/private 짝 병합 행 →
+// 펼치면 프레임별 하위행(양식 모달은 프레임마다 템플릿이 달라 여기서만 연다).
+function RecommendGroupSection({ g, rows, drafts, ko, pct, th, td, num, onPreview }) {
+  const [dayOpen, setDayOpen] = useState({}) // day -> bool (유저 토글, 기본값은 최근 2일만 펼침)
+  const [stemOpen, setStemOpen] = useState({}) // stem -> bool
+  const [showAllDays, setShowAllDays] = useState(false)
+
+  // 1) 프레임 짝 병합: public/private 는 상호배타 코호트라 단순 합산.
+  const stems = {}
+  for (const c of [...rows, ...drafts]) {
+    const key = stemOf(c.campaign)
+    const s = (stems[key] = stems[key] || {
+      stem: key, children: [], sent: 0, clicked: 0, conv: 0, applies: 0,
+      firstSentDay: null, lastSentDay: null,
+    })
+    s.children.push(c)
+    s.sent += c.sent; s.clicked += c.clicked; s.conv += convertedOf(c, g); s.applies += c.applies
+    if (c.firstSentDay && (!s.firstSentDay || c.firstSentDay < s.firstSentDay)) s.firstSentDay = c.firstSentDay
+    if (c.lastSentDay && (!s.lastSentDay || c.lastSentDay > s.lastSentDay)) s.lastSentDay = c.lastSentDay
+  }
+  // 2) 발송일 섹션: 미발송 초안('')이 맨 위, 그 다음 최신일 순.
+  const byDay = {}
+  for (const s of Object.values(stems)) {
+    const day = s.firstSentDay || ''
+    ;(byDay[day] = byDay[day] || []).push(s)
+  }
+  const days = Object.keys(byDay).sort((a, b) => (a === '' ? -1 : b === '' ? 1 : b.localeCompare(a)))
+  const realDays = days.filter((d) => d !== '')
+  const isDayOpen = (day) => (day in dayOpen ? dayOpen[day] : day === '' || realDays.indexOf(day) < 2)
+  const visibleDays = showAllDays ? days : days.filter((d) => d === '' || realDays.indexOf(d) < 8)
+  const hiddenCount = days.length - visibleDays.length
+
+  const sum = rows.reduce((a, c) => ({
+    sent: a.sent + c.sent, clicked: a.clicked + c.clicked,
+    conv: a.conv + convertedOf(c, g), applies: a.applies + c.applies,
+  }), { sent: 0, clicked: 0, conv: 0, applies: 0 })
+
+  const nameOf = (c) => {
+    const tpl = templateFor(c.campaign)
+    return tpl ? (
+      <span onClick={(e) => { e.stopPropagation(); onPreview(c.campaign, tpl) }} title={ko ? '발송 메일 양식 보기' : 'View email template'}
+        style={{ cursor: 'pointer', borderBottom: '1px dashed #C4C9CF' }}>{c.campaign}</span>
+    ) : c.campaign
+  }
+  const numCells = (r, style = {}) => (
+    <>
+      <td style={{ ...num, ...style }}>{r.sent}</td>
+      <td style={{ ...num, color: '#2563EB', ...style }}>{r.clicked}</td>
+      <td style={{ ...num, ...style }}>{r.sent ? pct(r.clicked / r.sent) : '—'}</td>
+      <td style={{ ...num, color: '#0D9488', ...style }}>{r.conv}</td>
+      <td style={{ ...num, ...style }}>{r.sent ? pct(r.conv / r.sent) : '—'}</td>
+      <td style={{ ...num, color: r.applies ? '#D97706' : undefined, fontWeight: 800, ...style }}>
+        {r.applies ? `${r.applies}${ko ? '건' : ''}` : '—'}
+      </td>
+    </>
+  )
+
+  return (
+    <div style={{ marginBottom: 24 }}>
+      <div style={{ fontSize: 13, fontWeight: 700, color: '#374151', margin: '0 0 2px' }}>{ko ? g.ko : g.en}</div>
+      <div style={{ fontSize: 11.5, color: '#9CA3AF', margin: '0 0 8px' }}>
+        {ko ? g.koDesc : g.enDesc}{' · '}
+        {ko ? '날짜/행을 클릭하면 펼쳐집니다' : 'Click a date or row to expand'}
+      </div>
+      <div className="adm-m-scroll" style={{ overflowX: 'auto', border: '1px solid #EEF0F2', borderRadius: 12 }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 560 }}>
+          <thead><tr>
+            <th style={th}>{ko ? '캠페인' : 'Campaign'}</th>
+            <th style={{ ...th, textAlign: 'right' }}>{ko ? '발송' : 'Sent'}</th>
+            <th style={{ ...th, textAlign: 'right' }}>{ko ? '클릭' : 'Clicks'}</th>
+            <th style={{ ...th, textAlign: 'right' }}>CTR</th>
+            <th style={{ ...th, textAlign: 'right' }}>{ko ? g.convKo : g.convEn}</th>
+            <th style={{ ...th, textAlign: 'right' }}>{ko ? '전환율' : 'Rate'}</th>
+            <th style={{ ...th, textAlign: 'right' }}>{ko ? '지원 건수' : 'Applies'}</th>
+          </tr></thead>
+          <tbody>
+            {visibleDays.map((day) => {
+              const list = byDay[day].sort((a, b) => b.sent - a.sent)
+              const open = isDayOpen(day)
+              const dSum = list.reduce((a, s) => ({
+                sent: a.sent + s.sent, clicked: a.clicked + s.clicked,
+                conv: a.conv + s.conv, applies: a.applies + s.applies,
+              }), { sent: 0, clicked: 0, conv: 0, applies: 0 })
+              return (
+                <Fragment key={day || 'draft'}>
+                  <tr onClick={() => setDayOpen((p) => ({ ...p, [day]: !open }))}
+                    style={{ background: '#F7F8FA', cursor: 'pointer' }}>
+                    <td style={{ ...td, fontWeight: 800, color: '#374151' }}>
+                      <span style={{ display: 'inline-block', width: 14, color: '#9CA3AF' }}>{open ? '▾' : '▸'}</span>
+                      {day ? day.slice(5) : (ko ? '미발송 초안' : 'Drafts')}
+                      <span style={{ fontWeight: 400, color: '#9CA3AF', fontSize: 11.5 }}> · {ko ? `캠페인 ${list.length}` : `${list.length} campaigns`}</span>
+                    </td>
+                    {numCells(dSum, { fontWeight: 800 })}
+                  </tr>
+                  {open && list.map((s) => {
+                    const single = s.children.length === 1 && s.children[0].campaign === s.stem
+                    const sOpen = !!stemOpen[s.stem]
+                    return (
+                      <Fragment key={s.stem}>
+                        <tr onClick={single ? undefined : () => setStemOpen((p) => ({ ...p, [s.stem]: !sOpen }))}
+                          style={single ? undefined : { cursor: 'pointer' }}>
+                          <td style={{ ...td, fontWeight: 700 }}>
+                            <span style={{ display: 'inline-block', width: 14, color: '#C4C9CF' }}>{single ? '' : sOpen ? '▾' : '▸'}</span>
+                            {single ? nameOf(s.children[0]) : s.stem}
+                            {s.lastSentDay && s.lastSentDay !== s.firstSentDay && <span style={{ fontWeight: 400, color: '#9CA3AF', fontSize: 11.5 }}> · ~{s.lastSentDay.slice(5)}</span>}
+                            {s.children.every((c) => c.draft) && <span style={{ fontWeight: 600, color: '#D97706', fontSize: 11 }}> · {ko ? '미발송' : 'draft'}</span>}
+                          </td>
+                          {numCells(s)}
+                        </tr>
+                        {sOpen && !single && s.children.map((c) => (
+                          <tr key={c.campaign} style={{ background: '#FCFCFD' }}>
+                            <td style={{ ...td, paddingLeft: 34, color: '#6B7280' }}>
+                              {nameOf(c)}
+                              {c.draft && <span style={{ fontWeight: 600, color: '#D97706', fontSize: 11 }}> · {ko ? '미발송' : 'draft'}</span>}
+                            </td>
+                            {numCells({ sent: c.sent, clicked: c.clicked, conv: convertedOf(c, g), applies: c.applies }, { fontWeight: 500 })}
+                          </tr>
+                        ))}
+                      </Fragment>
+                    )
+                  })}
+                </Fragment>
+              )
+            })}
+            {hiddenCount > 0 && (
+              <tr onClick={() => setShowAllDays(true)} style={{ cursor: 'pointer' }}>
+                <td colSpan={7} style={{ ...td, textAlign: 'center', color: '#6B7280', fontWeight: 600 }}>
+                  {ko ? `지난 발송일 ${hiddenCount}개 더 보기` : `Show ${hiddenCount} more days`}
+                </td>
+              </tr>
+            )}
+            <tr style={{ background: '#FAFBFC' }}>
+              <td style={{ ...td, fontWeight: 800, color: '#6B7280' }}>{ko ? '소계' : 'Subtotal'}</td>
+              {numCells(sum, { fontWeight: 800 })}
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   )
 }
