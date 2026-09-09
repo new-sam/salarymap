@@ -2700,6 +2700,42 @@ export const COLDMAIL_TEMPLATES = [
       initial: 'J', company: '{{회사}}', title: '{{공고 제목}}', meta: 'Đà Nẵng', tail: BENEFIT_PUBLIC,
     }),
   },
+  {
+    match: /^until0909-.*-private/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử — Thực tập sinh Marketing tại Until',
+      ko: '[FYI] 추천 후보 명단에 선정되셨습니다 — Until 마케팅 인턴',
+      en: "[FYI] You've been nominated — Marketing Intern at Until",
+    },
+    desc: '언틸 마케팅 인턴 재소싱 recommend (9/9, KTC R151/스레드 R118): 비공개 프레임 — 대학생 수습생 3개월·풀타임 필수로 JD 개편(Len) 후 재발송. 그룹=student(2026+ 졸업예정)/grad(2024~25 졸업 × 경력 1y 이하), 공통 컷=(한국어 시그널 or 영어 인증)×마케팅 시그널. 카피에 풀타임·3개월·지원금 300만 동 명시(자기선별). 9/7 bannerting 기수신·기지원 제외.',
+    source: 'scripts/outreach/until0909-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '<b>Until</b> — công ty Hàn Quốc vận hành dịch vụ quảng cáo banner/biển hiệu <b>Bannerting</b> — đang tuyển <b>Thực tập sinh Marketing</b> (chương trình 3 tháng) qua FYI, dành cho <b>sinh viên và bạn mới tốt nghiệp</b>. Yêu cầu: làm việc <b>full-time onsite</b> tại Hà Nội / TP.HCM hoặc Đà Nẵng trong 3 tháng; tiếng Hàn (ưu tiên) hoặc tiếng Anh tốt; biết dùng công cụ AI. Mức hỗ trợ: <b>3.000.000 VND/tháng</b>.',
+        ko: '한국 배너 광고 서비스 기업 <b>Until</b>(Bannerting 운영)이 FYI를 통해 <b>마케팅 인턴</b>(3개월 수습, 대학생·갓졸업 신입 대상)을 채용 중입니다. 풀타임 온사이트(하노이/호치민/다낭), 한국어 우대 또는 영어, AI 툴 활용, 지원금 월 300만 동 명시.',
+        en: 'Until — Korean banner-ad company (Bannerting) — is hiring a Marketing Intern (3-month, full-time onsite in HN/HCMC/DN, for students and fresh grads) via FYI. Korean preferred or good English; AI tools; 3,000,000 VND/month stipend.',
+      },
+      initial: 'U', company: 'Until', title: 'Marketing Intern', meta: 'Hà Nội / TP.HCM / Đà Nẵng · Thực tập 3 tháng · Full-time', tail: BENEFIT_PRIVATE,
+    }),
+  },
+  {
+    match: /^until0909-/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử gửi Until — Thực tập sinh Marketing',
+      ko: '[FYI] Until 추천 명단에 선정되셨습니다 — 마케팅 인턴',
+      en: "[FYI] You've been nominated to Until — Marketing Intern",
+    },
+    desc: '언틸 마케팅 인턴 재소싱 recommend (9/9): 공개 프레임 — FYI 검토 선정·명단에 프로필 동봉·지원 시 우선 검토. 그룹·컷은 private 항목과 동일.',
+    source: 'scripts/outreach/until0909-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '<b>Until</b> — công ty Hàn Quốc vận hành dịch vụ quảng cáo banner/biển hiệu <b>Bannerting</b> — đang tuyển <b>Thực tập sinh Marketing</b> (chương trình 3 tháng) qua FYI, dành cho <b>sinh viên và bạn mới tốt nghiệp</b>. Yêu cầu: làm việc <b>full-time onsite</b> tại Hà Nội / TP.HCM hoặc Đà Nẵng trong 3 tháng; tiếng Hàn (ưu tiên) hoặc tiếng Anh tốt; biết dùng công cụ AI. Mức hỗ trợ: <b>3.000.000 VND/tháng</b>.',
+        ko: '한국 배너 광고 서비스 기업 <b>Until</b>(Bannerting 운영)이 FYI를 통해 <b>마케팅 인턴</b>(3개월 수습, 대학생·갓졸업 신입 대상)을 채용 중입니다. 풀타임 온사이트(하노이/호치민/다낭), 한국어 우대 또는 영어, AI 툴 활용, 지원금 월 300만 동 명시.',
+        en: 'Until — Korean banner-ad company (Bannerting) — is hiring a Marketing Intern (3-month, full-time onsite in HN/HCMC/DN, for students and fresh grads) via FYI. Korean preferred or good English; AI tools; 3,000,000 VND/month stipend.',
+      },
+      initial: 'U', company: 'Until', title: 'Marketing Intern', meta: 'Hà Nội / TP.HCM / Đà Nẵng · Thực tập 3 tháng · Full-time', tail: BENEFIT_PUBLIC,
+    }),
+  },
 ]
 
 // 발송 전 초안 캠페인 — 이벤트가 없어도 콜드메일 탭 표에 '미발송' 행으로 띄워 양식을 검수한다.
