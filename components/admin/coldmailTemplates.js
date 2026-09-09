@@ -2560,6 +2560,42 @@ export const COLDMAIL_TEMPLATES = [
     }),
   },
   {
+    match: /^motive-.*-private/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử — Project Manager tại Motive Pictures',
+      ko: '[FYI] 추천 후보 명단에 선정되셨습니다 — Motive Pictures PM',
+      en: "[FYI] You've been nominated — Project Manager at Motive Pictures",
+    },
+    desc: 'Motive Pictures PM 추천 (9/9): 비공개 프레임 — 한·베 합작 영화 제작 프로젝트 PM(HCM/HN, Junior 15–17tr, 영어 필수·한국어 우대·기업 마케팅 경험). 룰=PM 코어(pm) + Marketing/BD·비개발×영화시그널 확장(pm2). 풀봇 실측 코어 20·확장 62.',
+    source: 'scripts/outreach/motive-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '<b>Motive Pictures</b> đang triển khai dự án <b>hợp tác sản xuất phim điện ảnh giữa Hàn Quốc và Việt Nam</b>, và tuyển <b>Project Manager</b> qua FYI (TP.HCM hoặc Hà Nội). Công việc: điều phối dự án phim Hàn–Việt, đầu mối giữa đoàn phim/đối tác/nhà tài trợ, marketing quảng bá phim, phát triển tài trợ/B2B. Yêu cầu: <b>tiếng Anh thành thạo</b> (tiếng Hàn là lợi thế), kinh nghiệm marketing doanh nghiệp.',
+        ko: '<b>Motive Pictures</b>가 한·베 합작 영화 제작 프로젝트의 <b>Project Manager</b>를 FYI를 통해 채용 중입니다(HCM/하노이, Junior 15–17tr). 업무: 한·베 영화 프로젝트 조율, 제작진·파트너·스폰서 커뮤니케이션, 영화 마케팅, 스폰서십·B2B. 요건: 영어 필수(한국어 우대), 기업 마케팅 경험.',
+        en: '<b>Motive Pictures</b> is hiring a <b>Project Manager</b> for a Korea–Vietnam film co-production via FYI (HCMC/Hanoi, Junior, 15–17M). Coordinate the KR–VN film project, stakeholders and sponsors, run film marketing and B2B sponsorship. Fluent English required (Korean a plus), corporate marketing experience.',
+      },
+      initial: 'M', company: 'Motive Pictures', title: 'Project Manager', meta: 'TP.HCM hoặc Hà Nội · Junior · 15–17 triệu', tail: BENEFIT_PRIVATE,
+    }),
+  },
+  {
+    match: /^motive-/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử gửi Motive Pictures — Project Manager',
+      ko: '[FYI] Motive Pictures 추천 명단에 선정되셨습니다 — PM',
+      en: "[FYI] You've been nominated to Motive Pictures — Project Manager",
+    },
+    desc: 'Motive Pictures PM 추천 (9/9): 공개 프레임 — FYI 검토 선정·명단에 프로필 동봉·지원 시 우선 검토. 2그룹(pm 코어/pm2 확장).',
+    source: 'scripts/outreach/motive-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '<b>Motive Pictures</b> đang triển khai dự án <b>hợp tác sản xuất phim điện ảnh giữa Hàn Quốc và Việt Nam</b>, và tuyển <b>Project Manager</b> qua FYI (TP.HCM hoặc Hà Nội). Đội ngũ FYI đã xem xét toàn bộ hồ sơ và <b>chọn bạn vào danh sách đề cử</b> — hồ sơ công khai của bạn sẽ được gửi kèm danh sách cho nhà tuyển dụng trong tuần này.',
+        ko: '<b>Motive Pictures</b>가 한·베 합작 영화 제작 프로젝트의 <b>Project Manager</b>를 FYI를 통해 채용 중입니다(HCM/하노이). FYI 팀이 이력서 전체를 검토해 회원님을 <b>추천 명단에 선정</b>했으며, 공개 프로필은 이번 주 명단과 함께 담당자에게 전달됩니다.',
+        en: '<b>Motive Pictures</b> is hiring a <b>Project Manager</b> for a Korea–Vietnam film co-production via FYI (HCMC/Hanoi). The FYI team reviewed all profiles and <b>nominated you</b>; your public profile goes to the recruiter with this week\'s list.',
+      },
+      initial: 'M', company: 'Motive Pictures', title: 'Project Manager', meta: 'TP.HCM hoặc Hà Nội · Junior · 15–17 triệu', tail: BENEFIT_PUBLIC,
+    }),
+  },
+  {
     match: /^resume-register-bonus/,
     subject: {
       vi: '{{name}} ơi, bạn chưa đủ điều kiện nhận thưởng 1.000.000₫',
