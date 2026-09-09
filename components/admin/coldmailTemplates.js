@@ -2736,6 +2736,42 @@ export const COLDMAIL_TEMPLATES = [
       initial: 'U', company: 'Until', title: 'Marketing Intern', meta: 'Hà Nội / TP.HCM / Đà Nẵng · Thực tập 3 tháng · Full-time', tail: BENEFIT_PUBLIC,
     }),
   },
+  {
+    match: /^tv0909-.*-private/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử — {{포지션}} tại TechValley',
+      ko: '[FYI] 추천 후보 명단에 선정되셨습니다 — TechValley {{포지션}}',
+      en: "[FYI] You've been nominated — {{position}} at TechValley",
+    },
+    desc: '테크밸리 3공고 recommend (9/9, Mia 게재 알림 당일 발송): 비공개 프레임 — HCMC IT 아웃소싱·클라우드 기업. 그룹=comtor(V83: 한국어×경력 1y 미만×HCMC권, TOPIK5+ 우대·400만 동)/cloud(V82: 영어 인증×≤3y×AWS 스킬 2개+, 영문 CV 필수)/mkt(V84: 마케팅 직군×영어×인턴 연령대×HCMC권, 400만 동). 그룹별 인트로 갈림. 인턴 2건은 HCMC권+미기재 지역 게이트.',
+    source: 'scripts/outreach/tv0909-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '{{그룹별 포지션·요건 소개 — 예: comtor}} <b>TechValley Vietnam</b> — công ty Hàn Quốc về IT outsourcing, hạ tầng cloud &amp; tư vấn tại TP.HCM — đang tuyển <b>Thực tập sinh Phiên dịch tiếng Hàn (IT COMTOR)</b> qua FYI: sinh viên/mới tốt nghiệp ngành tiếng Hàn, ưu tiên TOPIK 5+, trợ cấp 4.000.000 VND/tháng, cơ hội thử việc sau 3 tháng.',
+        ko: '{{그룹별 포지션·요건 소개}} 예: HCMC 한국계 IT 아웃소싱·클라우드 기업 <b>TechValley</b>가 FYI를 통해 IT컴토 인턴(한국어 전공·TOPIK5+ 우대·지원금 400만 동)을 채용 중입니다.',
+        en: '{{per-group position/requirements intro}} e.g. TechValley — Korean IT outsourcing & cloud company in HCMC — is hiring a Korean interpreter intern (TOPIK 5+ preferred, 4M VND stipend) via FYI.',
+      },
+      initial: 'T', company: 'TechValley', title: '{{공고 제목}}', meta: 'Onsite · TP.HCM', tail: BENEFIT_PRIVATE,
+    }),
+  },
+  {
+    match: /^tv0909-/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử gửi TechValley — {{포지션}}',
+      ko: '[FYI] TechValley 추천 명단에 선정되셨습니다 — {{포지션}}',
+      en: "[FYI] You've been nominated to TechValley — {{position}}",
+    },
+    desc: '테크밸리 3공고 recommend (9/9): 공개 프레임 — FYI 검토 선정·명단에 프로필 동봉·지원 시 우선 검토. 그룹·컷은 private 항목과 동일(comtor/cloud/mkt).',
+    source: 'scripts/outreach/tv0909-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '{{그룹별 포지션·요건 소개}} Đội ngũ FYI đã xem xét toàn bộ hồ sơ và <b>chọn bạn vào danh sách đề cử</b> — hồ sơ công khai của bạn sẽ được gửi kèm danh sách cho nhà tuyển dụng trong tuần này.',
+        ko: '{{그룹별 포지션·요건 소개}} FYI 팀이 이력서 전체를 검토해 회원님을 <b>추천 명단에 선정</b>했으며, 공개 프로필은 이번 주 명단과 함께 담당자에게 전달됩니다.',
+        en: '{{per-group position/requirements intro}} The FYI team reviewed all profiles and <b>nominated you</b>; your public profile goes to the recruiter with this week\'s list.',
+      },
+      initial: 'T', company: 'TechValley', title: '{{공고 제목}}', meta: 'Onsite · TP.HCM', tail: BENEFIT_PUBLIC,
+    }),
+  },
 ]
 
 // 발송 전 초안 캠페인 — 이벤트가 없어도 콜드메일 탭 표에 '미발송' 행으로 띄워 양식을 검수한다.
