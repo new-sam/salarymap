@@ -1385,6 +1385,42 @@ export const COLDMAIL_TEMPLATES = [
     }),
   },
   {
+    match: /^s2e-edu-.*-private/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử — Cộng tác viên phát triển đối tác tại s2e',
+      ko: '[FYI] 추천 후보 명단에 선정되셨습니다 — s2e 파트너 개발 협력자',
+      en: "[FYI] You've been nominated — Partner Development Collaborator at s2e",
+    },
+    desc: 's2e 재소싱 recommend2 (9/9): 비공개 프레임 — 1차 추천 전원 반려("학원/학교 영업 네트워크 희망") 후 교육업계 앵글 재소싱. 룰=교육 시그널(tuyển sinh·어학원·유학원·edtech)×영업 시그널 하드컷, 기지원만 제외. 공고 우대 문구 동시 수정.',
+    source: 'scripts/outreach/s2e-edu-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '<b>s2e</b> — công ty Hàn Quốc trong lĩnh vực thể thao – giáo dục, đang mở rộng thí điểm (POC) ra Việt Nam — đang tuyển <b>Cộng tác viên phát triển đối tác</b> qua FYI (remote, CTV theo dự án). Lần này công ty <b>đặc biệt ưu tiên ứng viên có kinh nghiệm sales/tư vấn tuyển sinh hoặc mạng lưới với học viện, trung tâm, trường học</b> — kinh nghiệm giáo dục của bạn chính là điều họ đang tìm.',
+        ko: '스포츠·교육 한국 기업 <b>s2e</b>가 파트너 개발 협력자(리모트 CTV)를 재모집 중입니다. 이번엔 <b>학원·학교 대상 영업/원생모집 경험·네트워크 보유자를 특별 우대</b> — 교육업계 경력 보유자에게 발송.',
+        en: '<b>s2e</b> — Korean sports-education company — is re-hiring a Partner Development Collaborator (remote). This round strongly prefers candidates with <b>academy/school sales experience or networks</b>.',
+      },
+      initial: 'S', company: 's2e', title: 'Cộng tác viên phát triển đối tác Việt Nam', meta: 'Remote · Freelance/CTV theo dự án POC · 7–9 triệu', tail: BENEFIT_PRIVATE,
+    }),
+  },
+  {
+    match: /^s2e-edu-/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử gửi s2e — Cộng tác viên phát triển đối tác',
+      ko: '[FYI] s2e 추천 명단에 선정되셨습니다 — 파트너 개발 협력자',
+      en: "[FYI] You've been nominated to s2e — Partner Development Collaborator",
+    },
+    desc: 's2e 재소싱 recommend2 (9/9): 공개 프레임 — 교육업계 앵글(학원·학교 영업 네트워크 우대), FYI 검토 선정·명단 동봉·우선 검토.',
+    source: 'scripts/outreach/s2e-edu-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '<b>s2e</b> — công ty Hàn Quốc thể thao – giáo dục, mở rộng POC ra Việt Nam — đang tuyển <b>Cộng tác viên phát triển đối tác</b> qua FYI (remote, CTV theo dự án), <b>đặc biệt ưu tiên kinh nghiệm sales/tuyển sinh hoặc mạng lưới học viện, trung tâm, trường học</b>. Đội ngũ FYI đã xem xét toàn bộ hồ sơ và <b>chọn bạn vào danh sách đề cử</b> — hồ sơ công khai của bạn sẽ được gửi kèm danh sách cho nhà tuyển dụng trong tuần này.',
+        ko: '스포츠·교육 한국 기업 <b>s2e</b>가 학원·학교 영업 네트워크 우대 조건으로 파트너 개발 협력자를 재모집 중입니다. FYI 팀이 검토해 회원님을 <b>추천 명단에 선정</b>했습니다.',
+        en: '<b>s2e</b> is re-hiring a Partner Development Collaborator (remote), strongly preferring academy/school sales networks. The FYI team reviewed all profiles and <b>nominated you</b>.',
+      },
+      initial: 'S', company: 's2e', title: 'Cộng tác viên phát triển đối tác Việt Nam', meta: 'Remote · Freelance/CTV theo dự án POC · 7–9 triệu', tail: BENEFIT_PUBLIC,
+    }),
+  },
+  {
     match: /^s2e-recommend\d-.*-private/,
     subject: {
       vi: '[FYI] Bạn được chọn vào danh sách đề cử — Cộng tác viên phát triển đối tác tại s2e',
