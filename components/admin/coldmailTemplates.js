@@ -2592,6 +2592,42 @@ export const COLDMAIL_TEMPLATES = [
     source: 'scripts/outreach/resume-register-coldmail.mjs',
     html: registerHtml,
   },
+  {
+    match: /^dn0909-.*-private/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử — {{포지션}} tại {{회사}}',
+      ko: '[FYI] 추천 후보 명단에 선정되셨습니다 — {{회사}} {{포지션}}',
+      en: "[FYI] You've been nominated — {{position}} at {{company}}",
+    },
+    desc: '다낭 9월 이벤트 recommend (9/9, Mia 요청): 비공개 프레임 — 다낭 거주 후보에게 4개사 7개 JD 재발송(기지원만 제외, 기추천 포함). 그룹=bada-plan(비개발×영어, JD 개편: 다낭→한국 근무)/bada-mkt/bada-uiux/nalda-fs(React+TS)/nx-sales/nx-design/jinosys-mobile(PHP·Android 스택). 그룹별 인트로·잡카드가 갈림. Komang·S2E·Overlay·Andwise는 제외 지시.',
+    source: 'scripts/outreach/dn0909-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '{{그룹별 회사·포지션·요건 소개 — 예: Jinosys}} <b>Jinosys</b> — công ty Hàn Quốc chuyên nền tảng IoT an toàn dựa trên AI (18 bằng sáng chế, đối tác an toàn của Samsung Electronics) — đang tuyển <b>Mobile App & Web Service Developer (IoT Platform)</b> qua FYI, làm việc tại <b>Đà Nẵng</b>. Stack chính: PHP · HTML5/CSS3 · JavaScript · Android (Java/Kotlin).',
+        ko: '{{그룹별 회사·포지션·요건 소개}} 예: 한국 안전 IoT 플랫폼 기업 <b>Jinosys</b>(삼성전자 안전 파트너)가 FYI를 통해 다낭 근무 모바일·웹 개발자를 채용 중입니다(PHP·HTML/CSS/JS·Android 스택).',
+        en: '{{per-group company/position/requirements intro}} e.g. Jinosys — Korean AI safety-IoT platform company — is hiring a Mobile App & Web Developer in Da Nang via FYI.',
+      },
+      initial: 'J', company: '{{회사}}', title: '{{공고 제목}}', meta: 'Đà Nẵng', tail: BENEFIT_PRIVATE,
+    }),
+  },
+  {
+    match: /^dn0909-/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử gửi {{회사}} — {{포지션}}',
+      ko: '[FYI] {{회사}} 추천 명단에 선정되셨습니다 — {{포지션}}',
+      en: "[FYI] You've been nominated to {{company}} — {{position}}",
+    },
+    desc: '다낭 9월 이벤트 recommend (9/9, Mia 요청): 공개 프레임 — FYI 검토 선정·명단에 프로필 동봉·지원 시 우선 검토. 7그룹(bada-plan/bada-mkt/bada-uiux/nalda-fs/nx-sales/nx-design/jinosys-mobile), 전원 다낭 거주.',
+    source: 'scripts/outreach/dn0909-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '{{그룹별 회사·포지션·요건 소개}} Đội ngũ FYI đã xem xét toàn bộ hồ sơ và <b>chọn bạn vào danh sách đề cử</b> — hồ sơ công khai của bạn sẽ được gửi kèm danh sách cho nhà tuyển dụng trong tuần này.',
+        ko: '{{그룹별 회사·포지션·요건 소개}} FYI 팀이 이력서 전체를 검토해 회원님을 <b>추천 명단에 선정</b>했으며, 공개 프로필은 이번 주 명단과 함께 담당자에게 전달됩니다.',
+        en: '{{per-group company/position/requirements intro}} The FYI team reviewed all profiles and <b>nominated you</b>; your public profile goes to the recruiter with this week\'s list.',
+      },
+      initial: 'J', company: '{{회사}}', title: '{{공고 제목}}', meta: 'Đà Nẵng', tail: BENEFIT_PUBLIC,
+    }),
+  },
 ]
 
 // 발송 전 초안 캠페인 — 이벤트가 없어도 콜드메일 탭 표에 '미발송' 행으로 띄워 양식을 검수한다.
