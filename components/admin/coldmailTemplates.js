@@ -2808,6 +2808,42 @@ export const COLDMAIL_TEMPLATES = [
       initial: 'P', company: 'PI Power Solutions', title: 'ACCOUNTANT', meta: 'Onsite · Tân Sơn Nhất, TP.HCM · 11–15 triệu ₫', tail: BENEFIT_PUBLIC,
     }),
   },
+  {
+    match: /^pickcare0910-.*-private/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử — {{포지션}} tại PickCare',
+      ko: '[FYI] 추천 후보 명단에 선정되셨습니다 — PickCare {{포지션}}',
+      en: "[FYI] You've been nominated — {{position}} at PickCare",
+    },
+    desc: '픽케어(R138 UI/UX 디자이너 · R139 디지털 마케터) FRESHER recommend (9/10, 공고 등록 당일): 비공개 프레임 — 한국 펫테크(AI 반려동물 서비스), 온사이트 HN/HCM/ĐN, 10–12M VND, 영문 CV 필수. 컷=재학생(2026+) 또는 ≤2y × (UI/UX 코어 | 마케팅 시그널), 언어는 가점만(JD 언어 조건 없음). 겸업(UI/UX+마케팅)=클라이언트 베스트 요청 → 가점+반대편 공고 링크 동봉+events.meta.dual 기록(추천시트 note 표기용).',
+    source: 'scripts/outreach/pickcare0910-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '<b>PickCare</b> — công ty pet-tech Hàn Quốc phát triển dịch vụ thú cưng ứng dụng AI (pickcare.co.kr) — đang tuyển <b>{{Digital Marketer / UI-UX Designer}} (Fresher)</b> qua FYI, onsite Hà Nội / TP.HCM / Đà Nẵng. Lương 10–12 triệu; nộp CV bằng tiếng Anh. {{그룹별 업무·요건 요약}}',
+        ko: '한국 펫테크 기업 <b>PickCare</b>(AI 반려동물 서비스)가 FYI를 통해 <b>{{디지털 마케터/UI-UX 디자이너}} (Fresher)</b>를 채용 중입니다. 온사이트 HN/HCM/ĐN, 월 10–12M VND, 영문 CV 필수. 겸업 가능자에겐 반대편 공고 링크도 동봉.',
+        en: 'PickCare — Korean pet-tech company building AI pet-care services — is hiring a {{Digital Marketer / UI-UX Designer}} (Fresher) via FYI. Onsite HN/HCM/DN; 10–12M VND; CV in English.',
+      },
+      initial: 'P', company: 'PickCare', title: '{{공고 제목}}', meta: 'Onsite · HN / TP.HCM / ĐN · 10–12 triệu ₫', tail: BENEFIT_PRIVATE,
+    }),
+  },
+  {
+    match: /^pickcare0910-/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử gửi PickCare — {{포지션}}',
+      ko: '[FYI] PickCare 추천 명단에 선정되셨습니다 — {{포지션}}',
+      en: "[FYI] You've been nominated to PickCare — {{position}}",
+    },
+    desc: '픽케어 FRESHER recommend (9/10): 공개 프레임 — FYI 검토 선정·명단에 프로필 동봉·지원 시 우선 검토. 컷·겸업 처리는 private 항목과 동일.',
+    source: 'scripts/outreach/pickcare0910-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '<b>PickCare</b> — công ty pet-tech Hàn Quốc phát triển dịch vụ thú cưng ứng dụng AI (pickcare.co.kr) — đang tuyển <b>{{Digital Marketer / UI-UX Designer}} (Fresher)</b> qua FYI. Đội ngũ FYI đã xem xét toàn bộ hồ sơ và <b>chọn bạn vào danh sách đề cử</b> — hồ sơ công khai của bạn sẽ được gửi kèm danh sách cho nhà tuyển dụng trong tuần này.',
+        ko: '한국 펫테크 기업 <b>PickCare</b>의 {{디지털 마케터/UI-UX 디자이너}} (Fresher) 포지션 — FYI 팀이 이력서 전체를 검토해 회원님을 <b>추천 명단에 선정</b>했으며, 공개 프로필은 이번 주 명단과 함께 담당자에게 전달됩니다.',
+        en: 'PickCare {{Digital Marketer / UI-UX Designer}} (Fresher) — the FYI team reviewed all profiles and <b>nominated you</b>; your public profile goes to the recruiter with this week\'s list.',
+      },
+      initial: 'P', company: 'PickCare', title: '{{공고 제목}}', meta: 'Onsite · HN / TP.HCM / ĐN · 10–12 triệu ₫', tail: BENEFIT_PUBLIC,
+    }),
+  },
 ]
 
 // 발송 전 초안 캠페인 — 이벤트가 없어도 콜드메일 탭 표에 '미발송' 행으로 띄워 양식을 검수한다.
