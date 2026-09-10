@@ -17,6 +17,10 @@ const flag = (k, d) => { const i = args.indexOf('--' + k); return i >= 0 ? (args
 const doSend = args.includes('--send')
 const onlyGroup = flag('group', null)
 const maxN = flag('max', null) ? parseInt(flag('max'), 10) : null
+// 당일 1인1통 완화(9/9 유저 지시: 정보성 메일이라 시간 간격만 확보되면 같은 날 재발송 허용).
+// 미지정 시 기존대로 당일 0시 기준, --gap-hours N이면 최근 N시간 수신자만 제외.
+const gapHours = flag('gap-hours', null) ? parseFloat(flag('gap-hours')) : null
+const sinceIso = gapHours != null ? new Date(Date.now() - gapHours * 3600 * 1000).toISOString() : new Date().toISOString().slice(0, 10)
 const SITE = String(flag('site', env.NEXT_PUBLIC_SITE_URL || 'https://salary-fyi.com')).replace(/\/$/, '')
 const RESEND_FROM = env.RESEND_FROM || 'FYI <hello@salary-fyi.com>'
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
@@ -145,7 +149,7 @@ async function main() {
     fetchAll(() => sb.from('job_recommendations').select('user_id').eq('job_id', JOB_ID).order('id')),
     fetchAll(() => sb.from('job_applications').select('user_id').eq('job_id', JOB_ID).order('id')),
     fetchAll(() => sb.from('job_recommendations').select('user_id,to_email')
-      .gte('created_at', new Date().toISOString().slice(0, 10)).order('id')),
+      .gte('created_at', sinceIso).order('id')),
   ])
   const unsubSet = new Set(unsubs.map((r) => r.user_id))
   const recSet = new Set(recs.map((r) => r.user_id)) // 9/7 bannerting 기수신 — 이틀 만의 중복 발송 방지
