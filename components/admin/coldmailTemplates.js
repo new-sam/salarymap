@@ -2772,6 +2772,42 @@ export const COLDMAIL_TEMPLATES = [
       initial: 'T', company: 'TechValley', title: '{{공고 제목}}', meta: 'Onsite · TP.HCM', tail: BENEFIT_PUBLIC,
     }),
   },
+  {
+    match: /^pi0910-.*-private/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử — Accountant tại PI Power Solutions',
+      ko: '[FYI] 추천 후보 명단에 선정되셨습니다 — PI Power Solutions 회계',
+      en: "[FYI] You've been nominated — Accountant at PI Power Solutions",
+    },
+    desc: 'PI 파워솔루션 회계 recommend (9/10, V85 신규 등록 당일): 비공개 프레임 — 클린룸·그린빌딩 조명, HCMC Tân Sơn Nhất 온사이트, 11~15M VND. 컷=회계 직군/스킬 × 경력 1~3.5y(시니어 급여 미스매치 제외) × HCMC권+미기재, 영어 인증은 가점만. 카피에 급여·MISA·다음 주 출근 우선 명시(자기선별). 헤드카운트 1명 소수정예.',
+    source: 'scripts/outreach/pi0910-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '<b>PI Power Solutions</b> — công ty chiếu sáng phòng sạch &amp; công trình xanh (Giám đốc người Hàn Quốc) — đang tuyển <b>Accountant</b> qua FYI tại Tân Sơn Nhất, TP.HCM. Yêu cầu 1+ năm kế toán, MISA, tiếng Anh giao tiếp; lương 11–15 triệu, lộ trình lên Kế toán trưởng; ưu tiên đi làm ngay tuần sau.',
+        ko: '클린룸·그린빌딩 조명 기업 <b>PI Power Solutions</b>(한국인 대표)가 FYI를 통해 회계 담당자를 채용 중입니다. 회계 1년+·MISA·영어, 월 11~15M VND, 다음 주 출근 가능자 우선.',
+        en: 'PI Power Solutions — clean-room & green-building lighting company (Korean director) — is hiring an Accountant in HCMC via FYI. 1+ yr accounting, MISA, English; 11–15M VND; can-start-next-week preferred.',
+      },
+      initial: 'P', company: 'PI Power Solutions', title: 'ACCOUNTANT', meta: 'Onsite · Tân Sơn Nhất, TP.HCM · 11–15 triệu ₫', tail: BENEFIT_PRIVATE,
+    }),
+  },
+  {
+    match: /^pi0910-/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử gửi PI Power Solutions — Accountant',
+      ko: '[FYI] PI Power Solutions 추천 명단에 선정되셨습니다 — 회계',
+      en: "[FYI] You've been nominated to PI Power Solutions — Accountant",
+    },
+    desc: 'PI 파워솔루션 회계 recommend (9/10): 공개 프레임 — FYI 검토 선정·명단에 프로필 동봉·지원 시 우선 검토. 컷은 private 항목과 동일.',
+    source: 'scripts/outreach/pi0910-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '<b>PI Power Solutions</b> — công ty chiếu sáng phòng sạch &amp; công trình xanh (Giám đốc người Hàn Quốc) — đang tuyển <b>Accountant</b> qua FYI tại Tân Sơn Nhất, TP.HCM. Đội ngũ FYI đã xem xét toàn bộ hồ sơ và <b>chọn bạn vào danh sách đề cử</b> — hồ sơ công khai của bạn sẽ được gửi kèm danh sách cho nhà tuyển dụng trong tuần này.',
+        ko: '클린룸·그린빌딩 조명 기업 <b>PI Power Solutions</b>(한국인 대표)의 회계 포지션 — FYI 팀이 이력서 전체를 검토해 회원님을 <b>추천 명단에 선정</b>했으며, 공개 프로필은 이번 주 명단과 함께 담당자에게 전달됩니다.',
+        en: 'PI Power Solutions Accountant — the FYI team reviewed all profiles and <b>nominated you</b>; your public profile goes to the recruiter with this week\'s list.',
+      },
+      initial: 'P', company: 'PI Power Solutions', title: 'ACCOUNTANT', meta: 'Onsite · Tân Sơn Nhất, TP.HCM · 11–15 triệu ₫', tail: BENEFIT_PUBLIC,
+    }),
+  },
 ]
 
 // 발송 전 초안 캠페인 — 이벤트가 없어도 콜드메일 탭 표에 '미발송' 행으로 띄워 양식을 검수한다.
