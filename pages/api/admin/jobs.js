@@ -66,12 +66,12 @@ export default async function handler(req, res) {
   if (req.method === 'PUT') {
     const { id, ...updates } = req.body
     if (!id) return res.status(400).json({ error: 'id required' })
-    // KTC 공고의 JD·고용형태를 수정하면 /ktc 가 우선 렌더하는 raw_payload.ktc 스냅샷의
+    // KTC 공고의 JD·고용형태·경력을 수정하면 /ktc 가 우선 렌더하는 raw_payload.ktc 스냅샷의
     // 해당 값을 걷어내, 양쪽 탭(/jobs, /ktc)이 수정된 값을 보게 한다 (lib/ktcJobs.js shape 폴백)
-    if (typeof updates.description === 'string' || typeof updates.type === 'string') {
+    if (typeof updates.description === 'string' || typeof updates.type === 'string' || 'experience_min' in updates || 'experience_max' in updates) {
       const { data: cur } = await supabase
         .from('jobs')
-        .select('source, description, type, raw_payload')
+        .select('source, description, type, experience_min, experience_max, raw_payload')
         .eq('id', id)
         .maybeSingle()
       if (cur?.source === 'ktc' && cur.raw_payload?.ktc) {
@@ -86,6 +86,11 @@ export default async function handler(req, res) {
         }
         if (typeof updates.type === 'string' && updates.type !== cur.type && 'work_type' in ktc) {
           delete ktc.work_type
+          stripped = true
+        }
+        if ((('experience_min' in updates && updates.experience_min !== cur.experience_min) ||
+             ('experience_max' in updates && updates.experience_max !== cur.experience_max)) && 'experience' in ktc) {
+          delete ktc.experience
           stripped = true
         }
         if (stripped) updates.raw_payload = { ...cur.raw_payload, ktc }
