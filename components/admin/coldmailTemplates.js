@@ -2844,6 +2844,78 @@ export const COLDMAIL_TEMPLATES = [
       initial: 'P', company: 'PickCare', title: '{{공고 제목}}', meta: 'Onsite · HN / TP.HCM / ĐN · 10–12 triệu ₫', tail: BENEFIT_PUBLIC,
     }),
   },
+  {
+    match: /^cosmos0911-.*-private/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử — Full-stack Developer (Junior) tại Cosmos Soft (Hàn Quốc)',
+      ko: '[FYI] 추천 후보 명단에 선정되셨습니다 — Cosmos Soft 풀스택 주니어(한국 근무)',
+      en: "[FYI] You've been nominated — Full-stack Developer (Junior) at Cosmos Soft (Korea)",
+    },
+    desc: '코스모스소프트(K22) Full-stack Junior 한국 근무 recommend (9/11, 공고 등록 당일): 비공개 프레임 — 보험사 SI/SM(자사 CRM), Java/Spring+React+SQL, 한국어 필수·영문 CV, 연 23~25M KRW. 컷=FS/BE/FE 직군 × 한국어 인증 × ≤3y. core=Java/Spring 근거 / ext=나머지 한국어 개발자. 풀 실측: 한국어 개발자 16명뿐(개발 922 중).',
+    source: 'scripts/outreach/cosmos0911-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '<b>Cosmos Soft</b> — công ty IT Hàn Quốc chuyên SI/SM, xây dựng hệ thống TM, GA, CS, QA cho các công ty bảo hiểm dựa trên giải pháp CRM riêng — đang tuyển <b>Full-stack Developer (Junior)</b> <b>làm việc tại Hàn Quốc</b> qua FYI. Yêu cầu: Java/Spring, HTML/JS/React, SQL (Oracle, MySQL), quản lý version, hiểu biết cloud; <b>giao tiếp được bằng tiếng Hàn</b>. Lương 23–25 triệu KRW/năm. Nộp CV bằng tiếng Anh.',
+        ko: '한국 IT기업 <b>Cosmos Soft</b>(보험사 SI/SM, 자사 CRM 솔루션)가 FYI를 통해 <b>풀스택 주니어(한국 근무)</b>를 채용 중. Java/Spring+React+SQL, 한국어 커뮤니케이션 필수, 영문 CV, 연 23~25M KRW.',
+        en: 'Cosmos Soft — Korean IT company (insurance SI/SM on its own CRM) — is hiring a Full-stack Developer (Junior) to work in Korea via FYI. Java/Spring, React, SQL; Korean communication required; CV in English; 23–25M KRW/yr.',
+      },
+      initial: 'C', company: 'Cosmos Soft', title: 'Full-stack - Junior', meta: 'Onsite · Seoul, Hàn Quốc · 23–25 triệu KRW/năm', tail: BENEFIT_PRIVATE,
+    }),
+  },
+  {
+    match: /^cosmos0911-/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử gửi Cosmos Soft — Full-stack Developer (Junior), làm việc tại Hàn Quốc',
+      ko: '[FYI] Cosmos Soft 추천 명단에 선정되셨습니다 — 풀스택 주니어(한국 근무)',
+      en: "[FYI] You've been nominated to Cosmos Soft — Full-stack Developer (Junior), work in Korea",
+    },
+    desc: '코스모스소프트(K22) recommend (9/11): 공개 프레임 — FYI 검토 선정·명단에 프로필 동봉·지원 시 우선 검토. 컷은 private 항목과 동일.',
+    source: 'scripts/outreach/cosmos0911-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '<b>Cosmos Soft</b> — công ty IT Hàn Quốc chuyên SI/SM cho các công ty bảo hiểm — đang tuyển <b>Full-stack Developer (Junior)</b> làm việc tại Hàn Quốc qua FYI. Đội ngũ FYI đã xem xét toàn bộ hồ sơ và <b>chọn bạn vào danh sách đề cử</b> — hồ sơ công khai của bạn sẽ được gửi kèm danh sách cho nhà tuyển dụng trong tuần này.',
+        ko: '한국 IT기업 <b>Cosmos Soft</b>의 풀스택 주니어(한국 근무) 포지션 — FYI 팀이 이력서 전체를 검토해 회원님을 <b>추천 명단에 선정</b>했으며, 공개 프로필은 이번 주 명단과 함께 담당자에게 전달됩니다.',
+        en: 'Cosmos Soft Full-stack Developer (Junior, Korea) — the FYI team reviewed all profiles and <b>nominated you</b>; your public profile goes to the recruiter with this week\'s list.',
+      },
+      initial: 'C', company: 'Cosmos Soft', title: 'Full-stack - Junior', meta: 'Onsite · Seoul, Hàn Quốc · 23–25 triệu KRW/năm', tail: BENEFIT_PUBLIC,
+    }),
+  },
+  {
+    match: /^amusing0911-.*-private/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử — Thực tập sinh Nghiên cứu thị trường tại Amusing Lab',
+      ko: '[FYI] 추천 후보 명단에 선정되셨습니다 — Amusing Lab 시장조사 인턴',
+      en: "[FYI] You've been nominated — Market Research Intern at Amusing Lab",
+    },
+    desc: '어뮤징랩(R189) 베트남 시장조사 인턴 recommend (9/11, 공고 등록 당일·성영님 지인 기업 ASAP): 비공개 프레임 — 트렌드 발굴·분석→인사이트, AI 활용 리서치, 수습 5M VND/월, 학력·경력 무관, 영문 CV. 컷=인턴 적합(재학생 2026+/갓졸업 24-25 ≤1y/기타 신입 ≤1y — 경력 1y+ 미스매치 제외) × (BA 코어 | Marketing/Operations×키워드 | 키워드 2+). 언어(영/한)는 JD 우대라 가점만.',
+    source: 'scripts/outreach/amusing0911-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '<b>Amusing Lab</b> — công ty Hàn Quốc — đang tuyển <b>Thực tập sinh Nghiên cứu thị trường Việt Nam (Research)</b> qua FYI. Phát hiện & phân tích xu hướng đang “hot” tại Việt Nam thành insight kinh doanh; nghiên cứu đối thủ; dùng AI để nghiên cứu hiệu quả. <b>Không yêu cầu học vấn, kinh nghiệm</b>; thử việc <b>5.000.000 VND/tháng</b>; ưu tiên tiếng Anh hoặc tiếng Hàn; nộp CV bằng tiếng Anh.',
+        ko: '한국 기업 <b>Amusing Lab</b>이 FYI를 통해 <b>베트남 시장조사 인턴(리서치)</b>을 채용 중. 트렌드 발굴·분석→인사이트, AI 활용 리서치, 수습 5M VND/월, 학력·경력 무관, 영문 CV.',
+        en: 'Amusing Lab — Korean company — is hiring a Vietnam Market Research Intern via FYI. Trend discovery & analysis into business insights, AI-assisted research; no degree/experience required; 5M VND/mo trial; CV in English.',
+      },
+      initial: 'A', company: 'Amusing Lab', title: 'Thực tập sinh Nghiên cứu thị trường Việt Nam (Research)', meta: 'Thực tập (Research) · TP.HCM · Thử việc 5.000.000 ₫/tháng', tail: BENEFIT_PRIVATE,
+    }),
+  },
+  {
+    match: /^amusing0911-/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử gửi Amusing Lab — Thực tập sinh Nghiên cứu thị trường',
+      ko: '[FYI] Amusing Lab 추천 명단에 선정되셨습니다 — 시장조사 인턴',
+      en: "[FYI] You've been nominated to Amusing Lab — Market Research Intern",
+    },
+    desc: '어뮤징랩(R189) 시장조사 인턴 recommend (9/11): 공개 프레임 — FYI 검토 선정·명단에 프로필 동봉·지원 시 우선 검토. 컷은 private 항목과 동일.',
+    source: 'scripts/outreach/amusing0911-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '<b>Amusing Lab</b> — công ty Hàn Quốc — đang tuyển <b>Thực tập sinh Nghiên cứu thị trường Việt Nam (Research)</b> qua FYI. Đội ngũ FYI đã xem xét toàn bộ hồ sơ và <b>chọn bạn vào danh sách đề cử</b> — hồ sơ công khai của bạn sẽ được gửi kèm danh sách cho nhà tuyển dụng trong tuần này.',
+        ko: '한국 기업 <b>Amusing Lab</b>의 베트남 시장조사 인턴(리서치) 포지션 — FYI 팀이 이력서 전체를 검토해 회원님을 <b>추천 명단에 선정</b>했으며, 공개 프로필은 이번 주 명단과 함께 담당자에게 전달됩니다.',
+        en: 'Amusing Lab Vietnam Market Research Intern — the FYI team reviewed all profiles and <b>nominated you</b>; your public profile goes to the recruiter with this week\'s list.',
+      },
+      initial: 'A', company: 'Amusing Lab', title: 'Thực tập sinh Nghiên cứu thị trường Việt Nam (Research)', meta: 'Thực tập (Research) · TP.HCM · Thử việc 5.000.000 ₫/tháng', tail: BENEFIT_PUBLIC,
+    }),
+  },
 ]
 
 // 발송 전 초안 캠페인 — 이벤트가 없어도 콜드메일 탭 표에 '미발송' 행으로 띄워 양식을 검수한다.
