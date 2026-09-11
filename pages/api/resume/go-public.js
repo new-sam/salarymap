@@ -121,9 +121,10 @@ function applyJob(btn, jobId){
 // 자체 완결 확인 페이지(베트남어 전용 — 수신자 전원 베트남 유저). CSP/외부의존 없음.
 function page(state) {
   const M = {
-    done: { emoji: '🎉', vi: 'CV của bạn đã được công khai!', vi2: 'Giờ bạn đã đủ điều kiện tham gia sự kiện thưởng 1.000.000₫. Các công ty phù hợp có thể liên hệ với bạn.' },
-    already: { emoji: '✅', vi: 'CV của bạn đã ở chế độ công khai.', vi2: 'Bạn đã đủ điều kiện tham gia sự kiện thưởng. Không cần làm gì thêm.' },
-    noresume: { emoji: '📄', vi: 'Chưa tìm thấy CV.', vi2: 'Vui lòng đăng ký CV trước tại salary-fyi.com/cv.' },
+    // 축하금(1M VND) 이벤트 중단(9/11) — 옛 메일 링크로 들어와도 보상 문구가 보이면 안 된다.
+    done: { emoji: '🎉', vi: 'CV của bạn đã được công khai!', vi2: 'Các công ty phù hợp có thể liên hệ với bạn.' },
+    already: { emoji: '✅', vi: 'CV của bạn đã ở chế độ công khai.', vi2: 'Không cần làm gì thêm.' },
+    noresume: { emoji: '📄', vi: 'Chưa tìm thấy CV.', vi2: 'Vui lòng đăng ký CV trước tại salary-fyi.com/profile.' },
     invalid: { emoji: '⚠️', vi: 'Liên kết không hợp lệ hoặc đã hết hạn.', vi2: 'Vui lòng dùng nút trong email mới nhất.' },
     error: { emoji: '⚠️', vi: 'Đã có lỗi xảy ra.', vi2: 'Vui lòng thử lại sau giây lát.' },
   }

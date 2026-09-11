@@ -8,15 +8,6 @@ import { track } from '../lib/track'
 /* Tab icons live at module scope (heavy JSX), labels are pulled from i18n
    inside the component so they react to the language switcher. */
 const TAB_ICONS = {
-  cv: (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-      <polyline points="14 2 14 8 20 8"/>
-      <line x1="8" y1="14" x2="13" y2="14"/>
-      <line x1="8" y1="18" x2="11" y2="18"/>
-      <path d="M16.5 15l.6 1.6 1.6.6-1.6.6-.6 1.6-.6-1.6-1.6-.6 1.6-.6z" fill="currentColor" stroke="none"/>
-    </svg>
-  ),
   jobs: (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
   ),
@@ -79,7 +70,7 @@ export default function MobileTabBar() {
   const active = getActiveKey()
   const tabs = [
     { key: 'jobs', href: '/jobs', label: t('nav.tabs.jobs'), icon: TAB_ICONS.jobs },
-    { key: 'cv', href: '/cv', label: t('nav.tabs.cv'), icon: TAB_ICONS.cv },
+    // cv 탭(축하금 랜딩) 제거 — 축하금 이벤트 중단(9/11), /cv 라우트도 next.config.mjs 에서 닫힘.
     { key: 'community', href: '/community', label: t('nav.tabs.community'), icon: TAB_ICONS.community },
     { key: 'mypage', href: '/profile', label: t('nav.tabs.mypage'), icon: TAB_ICONS.mypage },
   ]
@@ -101,7 +92,6 @@ export default function MobileTabBar() {
     <>
       <style>{`
         .mtab { display: none; }
-        .mtab-bubble { display: none; }
         @media (max-width: 768px) {
           .mtab { display: flex !important; position: fixed !important; top: auto !important; bottom: 0 !important; left: 0 !important; right: 0 !important; z-index: 99999; height: 60px; background: rgba(12,12,11,0.97); backdrop-filter: blur(14px); border-top: 1px solid rgba(255,255,255,0.08); align-items: center; justify-content: space-around; padding: 0; margin: 0; padding-bottom: env(safe-area-inset-bottom); font-family: 'Barlow', sans-serif; }
           /* iOS 인앱브라우저(Meta 광고 유입)가 스크롤 시 하단 UI를 접으면 fixed 바가
@@ -116,39 +106,6 @@ export default function MobileTabBar() {
           .mtab-item.admin-tab .mtab-label { color: rgba(255,96,0,0.7); font-size: 9px; }
           .mtab-item.admin-tab.on svg { color: #ff6000; }
           .mtab-item.admin-tab.on .mtab-label { color: #ff6000; }
-          /* /cv tab — floating orange bubble above the icon */
-          .mtab-bubble {
-            display: block;
-            position: absolute;
-            bottom: calc(100% - 2px);
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 9px;
-            font-weight: 700;
-            letter-spacing: 0.2px;
-            color: #fff;
-            background: #ff6000;
-            padding: 3px 8px;
-            border-radius: 100px;
-            white-space: nowrap;
-            box-shadow: 0 4px 12px rgba(255,96,0,0.5);
-            pointer-events: none;
-            animation: mtab-bubbleFloat 2.4s ease-in-out infinite;
-            z-index: 1;
-          }
-          .mtab-bubble::after {
-            content: '';
-            position: absolute;
-            bottom: -3px;
-            left: 50%;
-            transform: translateX(-50%) rotate(45deg);
-            width: 6px; height: 6px;
-            background: #ff6000;
-          }
-          @keyframes mtab-bubbleFloat {
-            0%, 100% { transform: translateX(-50%) translateY(0); }
-            50% { transform: translateX(-50%) translateY(-3px); }
-          }
         }
       `}</style>
 
@@ -160,9 +117,6 @@ export default function MobileTabBar() {
             className={`mtab-item${active === tab.key ? ' on' : ''}${tab.key === 'admin' ? ' admin-tab' : ''}`}
             onClick={(e) => handleTabClick(e, tab)}
           >
-            {tab.key === 'cv' && (
-              <span className="mtab-bubble">{t('nav.welcomeBonusBubble')}</span>
-            )}
             {tab.icon}
             <span className="mtab-label">{tab.label}</span>
           </Link>

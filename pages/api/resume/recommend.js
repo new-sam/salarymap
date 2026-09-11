@@ -95,7 +95,7 @@ function applyJob(btn, jobId){
 
 function page(state) {
   const M = {
-    noresume: { emoji: '📄', vi: 'Chưa tìm thấy CV.', vi2: 'Vui lòng đăng ký CV trước tại salary-fyi.com/cv.' },
+    noresume: { emoji: '📄', vi: 'Chưa tìm thấy CV.', vi2: 'Vui lòng đăng ký CV trước tại salary-fyi.com/profile.' },
     closed: { emoji: '🔒', vi: 'Vị trí đã đóng.', vi2: 'Các vị trí này hiện không còn tuyển. Xem thêm việc làm mới tại salary-fyi.com/jobs.' },
     invalid: { emoji: '⚠️', vi: 'Liên kết không hợp lệ hoặc đã hết hạn.', vi2: 'Vui lòng dùng nút trong email mới nhất.' },
     error: { emoji: '⚠️', vi: 'Đã có lỗi xảy ra.', vi2: 'Vui lòng thử lại sau giây lát.' },

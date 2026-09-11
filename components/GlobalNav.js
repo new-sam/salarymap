@@ -239,10 +239,8 @@ export default function GlobalNav({ activePage, onLogin, onJobsClick, mobileSear
                next.config.mjs 의 리다이렉트와 짝이다: 저기서 라우트를 막는데 이 링크를 남겨두면
                내비를 눌렀을 때 홈으로 튕기는 게 그대로 보인다. 다시 열 때 둘을 같이 되돌린다. */}
             <Link href="/jobs" className={`gnav-link gnav-link-light${activePage === 'jobs' ? ' on' : ''}`} onClick={() => onJobsClick?.()}>{t('nav.jobs')}</Link>
-            <Link href="/cv" className={`gnav-link gnav-link-light${activePage === 'cv' ? ' on' : ''}`} onClick={() => track('click_welcome_bonus_nav', { meta: { source: 'web' }, page: activePage || null })}>
-              {t('nav.welcomeBonus')}
-              <span className="gnav-welcome-bubble">{t('nav.welcomeBonusBubble')}</span>
-            </Link>
+            {/* 입사 축하금(/cv) 링크 제거 — 축하금 이벤트 중단 결정(9/11)으로 라우트를
+               next.config.mjs 에서 닫았다. 되살릴 일이 생기면 리다이렉트와 같이 되돌린다. */}
             <Link href="/community" className={`gnav-link gnav-link-light${activePage === 'community' ? ' on' : ''}`} onClick={() => track('click_community_nav', { meta: { source: 'web' }, page: activePage || null })}>{t('nav.community')}</Link>
             {/* K-Tech College 랜딩(/ktc)은 자체 내비를 쓰므로 activePage 가 없다 — on 상태 없이 링크만. */}
             <Link href="/ktc" className={`gnav-link gnav-zone${activePage === 'ktc' ? ' on' : ''}`} onClick={() => track('click_ktc_nav', { meta: { source: 'web' }, page: activePage || null })}>K-company</Link>

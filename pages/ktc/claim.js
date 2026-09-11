@@ -219,11 +219,12 @@ function DoneView() {
           <div className="kc-brand">FYI<span>Nền tảng tuyển dụng do K-Tech College xây dựng</span></div>
 
           {resumeUrl === null ? (
-            // 세션이 없거나 임포트가 안 된 엣지 — 약속을 못 지킨 상태로 두지 않고 /cv 로 잇는다.
+            // 세션이 없거나 임포트가 안 된 엣지 — 약속을 못 지킨 상태로 두지 않고 CV 업로드가
+            // 있는 /profile 로 잇는다(/cv 는 축하금 중단으로 9/11 폐쇄).
             <>
               <h1 className="kc-h1">Chỉ còn <b>một bước nữa</b></h1>
               <p className="kc-lead">Chưa tìm thấy CV trong tài khoản của bạn. Đăng ký CV chỉ mất 1 phút.</p>
-              <a className="kc-btn kc-btn-lg" href="/cv">Đăng ký CV →</a>
+              <a className="kc-btn kc-btn-lg" href="/profile">Đăng ký CV →</a>
             </>
           ) : (
             <>

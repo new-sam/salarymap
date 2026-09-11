@@ -29,6 +29,9 @@ const nextConfig = {
       // 코드는 그대로 두고 문만 닫는다(정리는 별도 PR). permanent:false 는 의도적이다 —
       // 308 로 내보내면 브라우저가 캐시해서 다시 열 때 사용자별로 안 풀린다.
       { source: '/resume', destination: '/', permanent: false },
+      // /cv 비공개 — 축하금(1M VND) 이벤트 중단 결정(9/11). 지급 계획이 없는 약속을
+      // 노출하는 리스크 제거. /resume 과 같은 방식: 코드는 두고 문만 닫는다.
+      { source: '/cv', destination: '/', permanent: false },
       { source: '/ig', destination: '/?utm_source=instagram&utm_medium=social', permanent: false },
       { source: '/th', destination: '/?utm_source=threads&utm_medium=social', permanent: false },
       { source: '/fb', destination: '/?utm_source=facebook&utm_medium=social', permanent: false },
