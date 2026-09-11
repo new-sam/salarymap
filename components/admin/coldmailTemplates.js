@@ -2916,6 +2916,42 @@ export const COLDMAIL_TEMPLATES = [
       initial: 'A', company: 'Amusing Lab', title: 'Thực tập sinh Nghiên cứu thị trường Việt Nam (Research)', meta: 'Thực tập (Research) · TP.HCM · Thử việc 5.000.000 ₫/tháng', tail: BENEFIT_PUBLIC,
     }),
   },
+  {
+    match: /^jinosys0911-.*-private/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử — Thực tập sinh AI·IoT·Robot tại Jinosys (Đà Nẵng)',
+      ko: '[FYI] 추천 후보 명단에 선정되셨습니다 — Jinosys AI·IoT·로봇 인턴(다낭)',
+      en: "[FYI] You've been nominated — AI·IoT·Robotics Intern at Jinosys (Da Nang)",
+    },
+    desc: 'Jinosys(R191) AI모바일/웹+IoT·로봇 인턴 recommend (9/11, 공고 등록 당일·ASAP): 비공개 프레임 — 온디바이스 AI 화재감지×IoT·로봇 연동(Physical AI), 3명 채용, 지원금 3M VND/월, 다낭 온사이트, 영문 CV. 컷=다낭 거주(호현 지시, VKU 무관) × 인턴 적합(재학생/갓졸업/신입 ≤1y) × (AI Engineer/Mobile/Web 코어 | Embedded/Backend×키워드 | 키워드 2+). 우대(ROS·임베디드·RTSP/WebRTC·영어·VKU)는 가점만.',
+    source: 'scripts/outreach/jinosys0911-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '<b>Jinosys</b> — công ty Hàn Quốc phát triển công nghệ phát hiện cháy bằng AI on-device kết hợp IoT & robot (Physical AI) — đang tuyển <b>Thực tập sinh phát triển Mobile/Web AI & tích hợp IoT·Robot</b> (03 người) tại <b>Đà Nẵng</b> qua FYI. Stack: PHP, HTML5/CSS3, JavaScript, Android (Java/Kotlin); ưu tiên ROS, embedded, RTSP/WebRTC, tiếng Anh. Trợ cấp <b>3.000.000 VND/tháng</b>; dự án từ 1 năm, có thể tuyển chính thức sau. Nộp CV bằng tiếng Anh.',
+        ko: '한국 기업 <b>Jinosys</b>(온디바이스 AI 화재감지×IoT·로봇, Physical AI)가 FYI를 통해 <b>AI 모바일/웹+IoT·로봇 연동 인턴</b> 3명을 다낭에서 채용 중. PHP/HTML/JS/Android, 지원금 3M VND/월, 1년+ 프로젝트·이후 정식 채용 가능, 영문 CV.',
+        en: 'Jinosys — Korean company building on-device AI fire detection with IoT & robotics (Physical AI) — is hiring 3 Mobile/Web AI & IoT·Robot Integration Interns in Da Nang via FYI. PHP/HTML/JS/Android; 3M VND/mo stipend; 1yr+ project with conversion potential; CV in English.',
+      },
+      initial: 'J', company: 'Jinosys', title: 'AI, IoT, and Robotics Integrated Mobile App & Web Service Intern', meta: 'Thực tập · Onsite Đà Nẵng · Trợ cấp 3.000.000 ₫/tháng', tail: BENEFIT_PRIVATE,
+    }),
+  },
+  {
+    match: /^jinosys0911-/,
+    subject: {
+      vi: '[FYI] Bạn được chọn vào danh sách đề cử gửi Jinosys — Thực tập sinh AI·IoT·Robot (Đà Nẵng)',
+      ko: '[FYI] Jinosys 추천 명단에 선정되셨습니다 — AI·IoT·로봇 인턴(다낭)',
+      en: "[FYI] You've been nominated to Jinosys — AI·IoT·Robotics Intern (Da Nang)",
+    },
+    desc: 'Jinosys(R191) 인턴 recommend (9/11): 공개 프레임 — FYI 검토 선정·명단에 프로필 동봉·지원 시 우선 검토. 컷은 private 항목과 동일.',
+    source: 'scripts/outreach/jinosys0911-recommend-coldmail.mjs',
+    html: (lang) => recommendShell(lang, {
+      intro: {
+        vi: '<b>Jinosys</b> — công ty Hàn Quốc phát triển công nghệ phát hiện cháy bằng AI on-device kết hợp IoT & robot — đang tuyển <b>Thực tập sinh phát triển Mobile/Web AI & tích hợp IoT·Robot</b> (03 người) tại Đà Nẵng qua FYI. Đội ngũ FYI đã xem xét toàn bộ hồ sơ và <b>chọn bạn vào danh sách đề cử</b> — hồ sơ công khai của bạn sẽ được gửi kèm danh sách cho nhà tuyển dụng trong tuần này.',
+        ko: '한국 기업 <b>Jinosys</b>의 AI·IoT·로봇 인턴(다낭) 포지션 — FYI 팀이 이력서 전체를 검토해 회원님을 <b>추천 명단에 선정</b>했으며, 공개 프로필은 이번 주 명단과 함께 담당자에게 전달됩니다.',
+        en: 'Jinosys AI·IoT·Robotics Intern (Da Nang) — the FYI team reviewed all profiles and <b>nominated you</b>; your public profile goes to the recruiter with this week\'s list.',
+      },
+      initial: 'J', company: 'Jinosys', title: 'AI, IoT, and Robotics Integrated Mobile App & Web Service Intern', meta: 'Thực tập · Onsite Đà Nẵng · Trợ cấp 3.000.000 ₫/tháng', tail: BENEFIT_PUBLIC,
+    }),
+  },
 ]
 
 // 발송 전 초안 캠페인 — 이벤트가 없어도 콜드메일 탭 표에 '미발송' 행으로 띄워 양식을 검수한다.
