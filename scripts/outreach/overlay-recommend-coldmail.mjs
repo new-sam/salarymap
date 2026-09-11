@@ -27,7 +27,7 @@ const txt = (p) => {
   const sk = Array.isArray(p.skills) ? p.skills.join(' ') : String(p.skills || '')
   return (sk + ' ' + JSON.stringify(p.experiences || '')).toLowerCase()
 }
-const ABROAD = /india|gurugram|delhi|philippin|manila|singapore|malaysia|indonesia|jakarta|myanmar|yangon|korea|japan|china/i
+const ABROAD = /india|gurugram|delhi|philippin|manila|singapore|malaysia|indonesia|jakarta|myanmar|yangon|korea|japan|china|nepal|kathmandu/i
 const DEV = new Set(['Fullstack', 'Backend', 'Frontend', 'Mobile', 'Embedded', 'DevOps', 'AI Engineer', 'QA'])
 const CREATIVE = new Set(['Design', 'Game'])
 const roles = (p) => [p.position, ...(p.desired_roles || [])].filter(Boolean)
@@ -192,6 +192,21 @@ async function main() {
     }
   }
   for (const g of GROUPS) byGroup[g.key].sort((a, b) => b.s - a.s)
+
+  // 손선별 수동 추가: --include-cloth/--include-rig id1,id2 (룰 미포착 적합자 — 가드는 동일 적용)
+  const poolById = new Map(pool.map((p) => [p.id, p]))
+  for (const g of GROUPS) {
+    const ids = String(flag('include-' + g.key, '') || '').split(',').map((s) => s.trim()).filter(Boolean)
+    for (const id of ids) {
+      const p = poolById.get(id)
+      if (!p) { console.error(`  include-${g.key} 프로필 없음: ${id}`); continue }
+      const e = (p.email || '').toLowerCase()
+      if (!e || seen.has(e) || unsubSet.has(p.id) || todayUsers.has(p.id) || todayEmails.has(e)) continue
+      if ((appliedByJob[g.jobId] || new Set()).has(p.id) || (recUserByJob[g.jobId] || new Set()).has(p.id)) continue
+      byGroup[g.key].push({ p, s: 0, frame: p.is_resume_public ? 'public' : 'private' })
+      seen.add(e)
+    }
+  }
 
   console.log('발송 대상(1인 1통 배정):')
   for (const g of GROUPS) {
